@@ -75,20 +75,25 @@ bool match(const re2::RE2 &re, const std::string &target)
 
 } // namespace detail
 
-Regex::Regex(const std::string &pattern)
-	: r{pattern, options} {}
+Regex::Regex(const std::string &pattern_)
+	: r{pattern_, create_options()}
+	, pattern{pattern_} {}
 
-[[nodiscard]] Match Regex::findall(const std::string &target)
+Regex::Regex(const Regex &other)
+	: r{other.pattern, other.options}
+	, pattern{other.pattern} {}
+
+[[nodiscard]] Match Regex::findall(const std::string &target) const
 {
 	return detail::findall(r, target);
 }
 
-[[nodiscard]] Match Regex::search(const std::string &target)
+[[nodiscard]] Match Regex::search(const std::string &target) const
 {
 	return detail::search(r, target);
 }
 
-[[nodiscard]] bool Regex::match(const std::string &target)
+[[nodiscard]] bool Regex::match(const std::string &target) const
 {
 	return detail::match(r, target);
 }

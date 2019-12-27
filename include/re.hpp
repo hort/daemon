@@ -12,8 +12,8 @@ class Match final : public std::vector<std::string>
 public:
 	Match() : std::vector<std::string>{} {}
 
-	explicit operator bool() const noexcept { return size(); }
-	std::string last() const noexcept { return (*this)[this->size() - 1]; }
+	explicit operator bool() const { return size(); }
+	std::string last() const { return (*this)[this->size() - 1]; }
 };
 
 namespace detail
@@ -61,31 +61,34 @@ class Regex
 {
 	re2::RE2 r;
 
-	static const re2::RE2::Options create_options()
+	static const re2::RE2::Options &create_options()
 	{
 		static re2::RE2::Options os{};
 		os.set_dot_nl(true);
 		return os;
 	}
 
-	const re2::RE2::Options options = create_options();
+	const re2::RE2::Options &options = create_options();
+	const std::string pattern;
 
 public:
-	Regex(const std::string &pattern);
+	Regex(const std::string &pattern_);
+	Regex(const Regex &other);
+	//Regex(Regex &&other);
 
 	/// \brief Find all occurence of "pattern" in "target".
-	[[nodiscard]] Match findall(const std::string &target);
+	[[nodiscard]] Match findall(const std::string &target) const;
 
 	/// \brief Find first occurence of "pattern" in "target".
-	[[nodiscard]] Match search(const std::string &target);
+	[[nodiscard]] Match search(const std::string &target) const;
 
 	/// \brief Check if "pattern" matches "target".
-	[[nodiscard]] bool match(const std::string &target);
+	[[nodiscard]] bool match(const std::string &target) const;
 
 	/// \brief Find first occurence of "pattern" in "target" and save the
 	/// results inside the variadic arguments.
 	template <typename ...Args>
-	void search(const std::string &target, Args& ...args)
+	void search(const std::string &target, Args& ...args) const
 	{
 		detail::search(r, target, args...);
 	}
