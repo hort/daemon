@@ -16,7 +16,6 @@ class Archive
 {
 
 	zip *archive;
-	bool is_open;
 	std::vector<char*> allocated;
 
 public:

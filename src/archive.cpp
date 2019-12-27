@@ -2,13 +2,14 @@
 
 #include <cstring>
 
+#include <iostream>
+
 namespace hort
 {
 
-Archive::Archive() : is_open{false} {}
+Archive::Archive() : archive{nullptr} {}
 
-Archive::Archive(const std::string &filepath)
-	: is_open{false}
+Archive::Archive(const std::string &filepath) : archive{nullptr}
 {
 	open(filepath);
 };
@@ -20,24 +21,25 @@ Archive::~Archive()
 
 bool Archive::open(const std::string &filepath)
 {
-	if (is_open)
+	if (archive)
 		return false;
 	archive = zip_open(filepath.c_str(), ZIP_CREATE, nullptr);
-	return is_open = archive != nullptr;
+	return archive != nullptr;
 }
 
 void Archive::close()
 {
-	if (is_open)
+	if (archive) {
 		zip_close(archive);
-	for (auto pointer : allocated)
-		free(pointer);
-	is_open = archive != nullptr;
+		archive = nullptr;
+		for (auto pointer : allocated)
+			free(pointer);
+	}
 }
 
 int Archive::add(const std::string &filepath, const std::string &bin)
 {
-	if (is_open)
+	if (!archive)
 		return -2;
 	zip_source *source = nullptr;
 	int index = -1;
@@ -56,7 +58,7 @@ int Archive::add(const std::string &filepath, const std::string &bin)
 
 int Archive::add(const std::map<std::string, std::string> &files)
 {
-	if (is_open)
+	if (!archive)
 		return -2;
 	for (const auto &[f, b] : files)
 		if (add(f, b) == -1)
