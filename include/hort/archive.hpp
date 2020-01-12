@@ -27,7 +27,8 @@ public:
 	void close();
 
 	/// \bierf Add binary data to archive.
-	/// \return index of the newly added file -1 on error, -2 if the archive hasn't been opened.
+	/// \return index of the newly added file -1 on error, -2 if the archive
+	/// hasn't been opened.
 	int add(const std::string &filepath, const std::string &bin);
 
 	/// \brief Add files to archive in bulk.

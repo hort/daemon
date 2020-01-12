@@ -19,26 +19,26 @@ class Session
 	int max_retries;
 	int retry_delay;
 
-	/// \brief CURL callback writer
+	/// \brief CURL callback writer.
 	static size_t writer(char *ptr, size_t size, size_t nmemb, std::string *data);
 
-	/// \brief Parse incoming headers and save them inside response
+	/// \brief Parse incoming headers and save them inside response.
 	void parse_headers(Response &response, const std::string &unparsed_headers);
 
-	/// \brief Perform an HTTP request
+	/// \brief Perform an HTTP request.
 	Response request(const std::string &uri, const std::string &payload, Method method);
 
 public:
 	Session(const std::string &cookie_filepath="./cookies");
 	~Session();
 
-	/// \brief Send a GET request to uri
+	/// \brief Send a GET request to uri.
 	Response get(const std::string &uri);
 
-	/// \brief Send a GET request to uri with formatted params
+	/// \brief Send a GET request to uri with formatted params.
 	Response get(const std::string uri, const std::map<std::string, std::string> &params);
 
-	/// \brief Send a GET request to uri with formatted params
+	/// \brief Send a GET request to uri with formatted params.
 	template <typename... Args>
 	Response get(std::string_view format, const Args&... args, const std::map<std::string, std::string> &params)
 	{
@@ -46,7 +46,7 @@ public:
 		return get(uri, "", params);
 	}
 
-	/// \brief Send a GET request to uri
+	/// \brief Send a GET request to uri.
 	template <typename... Args>
 	Response get(fmt::string_view format, const Args&... args)
 	{
@@ -54,17 +54,16 @@ public:
 		return request(uri, "", Method::GET);
 	}
 
-	/// \brief Send a POST request to uri with payload
+	/// \brief Send a POST request to uri with payload.
 	Response post(const std::string &uri, const std::string &payload);
 
-	/// \brief Send a POST request to uri with payload
-	/// \brief payload Dictionary of key-values that will be encoded as a string
+	/// \brief Send a POST request to uri with payload.
 	Response post(const std::string url, const std::map<std::string, std::string> &payload);
 
-	/// \brief Download uri and save response to file
+	/// \brief Download uri and save response to fill.
 	int download(const std::string &filepath, const std::string &filename, const std::string &uri);
 
-	/// \brief Download uri and save response to file
+	/// \brief Download uri and save response to fill.
 	template <typename... Args>
 	int download(const std::string &filepath, const std::string &filename, std::string_view format, const Args&... args)
 	{
@@ -72,10 +71,10 @@ public:
 		return download(filepath, filename, uri);
 	}
 
-	/// \brief Default headers for all requests
+	/// \brief Default headers for all request.
 	std::map<std::string, std::string> headers;
 
-	/// \brief Cookies for the current session
+	/// \brief Cookies for the current session.
 	CookieJar cookies;
 };
 

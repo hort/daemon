@@ -16,12 +16,11 @@ class CookieJar
 	std::string cached;
 	bool changed = true;
 
-private:
 	/// \brief Find nth delim after in str after position s.
-	int find_nth(std::string str, char delim, int n, int s = 0);
+	int find_nth(const std::string &str, char delim, int n, int s = 0);
 
 public:
-	CookieJar(std::string f);
+	CookieJar(std::string filepath_);
 
 	std::string get(const std::string &key) const;
 	void set(const std::string &key, std::string value);

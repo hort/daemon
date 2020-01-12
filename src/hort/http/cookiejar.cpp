@@ -1,12 +1,12 @@
-#include "http/cookiejar.hpp"
+#include "hort/http/cookiejar.hpp"
 
 #include <fstream>
 
 namespace hort::http
 {
 
-CookieJar::CookieJar(std::string f)
-	: filepath{f}
+CookieJar::CookieJar(std::string filepath_)
+	: filepath{filepath_}
 	, cached{""} {}
 
 void CookieJar::parse(struct curl_slist *unparsed)
@@ -88,7 +88,7 @@ void CookieJar::clear()
 	data.clear();
 }
 
-int CookieJar::find_nth(std::string str, char delim, int n, int s)
+int CookieJar::find_nth(const std::string &str, char delim, int n, int s)
 {
 	int current  = s;
 	int previous = 0;

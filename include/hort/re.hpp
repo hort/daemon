@@ -56,7 +56,7 @@ const auto replace = re2::RE2::Replace;
 /// \brief Replace all occurences of "re" in "str" with "rewrite".
 const auto replace_all = re2::RE2::GlobalReplace;
 
-/// \brief Class to prevent having to recompile of the same regex more than once
+/// \brief Class to prevent having to recompile of the same regex more than once.
 class Regex
 {
 	re2::RE2 r;
