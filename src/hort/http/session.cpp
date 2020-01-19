@@ -75,12 +75,12 @@ void Session::parse_headers(Response &response, const std::string &unparsed)
 	}
 }
 
-Response Session::get(const std::string &uri)
+Response Session::get(const std::string &url)
 {
-	return request(uri, "", Method::GET);
+	return request(url, "", Method::GET);
 }
 
-Response Session::get(const std::string uri, const std::map<std::string, std::string> &params)
+Response Session::get(const std::string url, const std::map<std::string, std::string> &params)
 {
 	std::string parsed_params;
 	char *escaped_field;
@@ -94,12 +94,12 @@ Response Session::get(const std::string uri, const std::map<std::string, std::st
 			curl_free(escaped_field);
 	}
 	parsed_params.pop_back();
-	return request(uri + parsed_params, "", Method::GET);
+	return request(url + parsed_params, "", Method::GET);
 }
 
-Response Session::post(const std::string &uri, const std::string &payload)
+Response Session::post(const std::string &url, const std::string &payload)
 {
-	return request(uri, payload, Method::POST);
+	return request(url, payload, Method::POST);
 }
 
 Response Session::post(const std::string url, const std::map<std::string, std::string> &payload)
@@ -182,10 +182,10 @@ Response Session::request(const std::string &url, const std::string &payload, Me
 	return response;
 }
 
-int Session::download(const std::string &uri, const std::string &filepath, const std::string &filename)
+int Session::download(const std::string &filepath, const std::string &filename, const std::string &url)
 {
 	hort::filesystem::mkpath(filepath);
-	auto bin = get(uri).body;
+	auto bin = get(url).body;
 	return hort::filesystem::save(bin, filepath, filename);
 }
 
