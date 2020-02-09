@@ -33,10 +33,25 @@ inline void search(const re2::RE2 &re, const std::string &target, Args& ...args)
 } // namespace detail
 
 /// \brief Find all occurence of "pattern" in "target".
-[[nodiscard]] Match findall(const std::string &pattern, const std::string &target);
+[[nodiscard]] inline Match findall(const std::string &pattern, const std::string &target)
+{
+	re2::RE2 re(pattern);
+	return detail::findall(re, target);
+}
 
 /// \brief Find first occurence of "pattern" in "target".
-[[nodiscard]] Match search(const std::string &pattern, const std::string &target);
+[[nodiscard]] inline Match search(const std::string &pattern, const std::string &target)
+{
+	re2::RE2 re(pattern);
+	return detail::search(re, target);
+}
+
+/// \brief Check if "pattern" matches "target".
+[[nodiscard]] inline bool match(const std::string &pattern, const std::string &target)
+{
+	re2::RE2 re(pattern);
+	return detail::match(re, target);
+}
 
 /// \brief Find first occurence of "pattern" in "target" and save the results
 /// inside the variadic arguments.
@@ -47,43 +62,65 @@ inline void search(const std::string &pattern, const std::string &target, Args& 
 	detail::search(re, target, args...);
 }
 
-/// \brief Check if "pattern" matches "target".
-[[nodiscard]] bool match(const std::string &pattern, const std::string &target);
-
 /// \brief Replace first occurence of "re" in "str" with "rewrite".
-const auto replace = re2::RE2::Replace;
+inline void replace(const std::string &pattern, const std::string &rewrite, std::string &str)
+{
+	re2::RE2::Replace(&str, pattern, rewrite);
+}
 
 /// \brief Replace all occurences of "re" in "str" with "rewrite".
-const auto replace_all = re2::RE2::GlobalReplace;
+inline void replace_all(const std::string &pattern, const std::string &rewrite, std::string &str)
+{
+	re2::RE2::GlobalReplace(&str, pattern, rewrite);
+}
 
 /// \brief Class to prevent having to recompile of the same regex more than once.
 class Regex
 {
 	re2::RE2 r;
 
+	static re2::RE2::Options &build_options()
+	{
+		static re2::RE2::Options o{};
+		o.set_dot_nl(true);
+		return o;
+	}
+
 	static const re2::RE2::Options &create_options()
 	{
-		static re2::RE2::Options os{};
-		os.set_dot_nl(true);
-		return os;
+		static const auto o = build_options();
+		return o;
 	}
 
 	const re2::RE2::Options &options = create_options();
 	const std::string pattern;
 
 public:
-	Regex(const std::string &pattern_);
-	Regex(const Regex &other);
-	//Regex(Regex &&other);
+	Regex(const std::string &pattern_)
+		: r{pattern_, create_options()}
+		, pattern{pattern_} {}
+
+	Regex(const Regex &other)
+		: r{other.pattern, other.options}
+		, pattern{other.pattern} {}
 
 	/// \brief Find all occurence of "pattern" in "target".
-	[[nodiscard]] Match findall(const std::string &target) const;
+	[[nodiscard]] Match findall(const std::string &target) const
+	{
+		return detail::findall(r, target);
+	}
 
 	/// \brief Find first occurence of "pattern" in "target".
-	[[nodiscard]] Match search(const std::string &target) const;
+	[[nodiscard]] Match search(const std::string &target) const
+	{
+		return detail::search(r, target);
+	}
 
 	/// \brief Check if "pattern" matches "target".
-	[[nodiscard]] bool match(const std::string &target) const;
+	[[nodiscard]] bool match(const std::string &target) const
+	{
+		return detail::match(r, target);
+	}
 
 	/// \brief Find first occurence of "pattern" in "target" and save the
 	/// results inside the variadic arguments.
