@@ -1,24 +1,48 @@
 #include "hort/fzf.hpp"
+#include "hort/re.hpp"
 
 #include <array>
 #include <memory>
+#include <iostream>
 
 namespace hort
 {
 
+std::vector<std::string> fzf(const std::vector<std::string> &entries)
+{
+	std::string str = "";
+	for (const auto &entry : entries) {
+		for (const auto &c : entry) {
+			switch (c) {
+			case '\\':
+				str += "\\\\";
+				break;
+			case '\'':
+				str += "'\\''";
+				break;
+			default:
+				str += c;
+				break;
+			}
+		}
+		str += "\n";
+	}
+	str.pop_back();
+	return detail::split(detail::fzf(str), "\n");
+}
+
 namespace detail
 {
 
-std::string exec(std::string cmd)
+std::string exec(const std::string &cmd)
 {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.data(), "r"), pclose);
-    if (!pipe)
-        throw std::runtime_error("popen() failed!");
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
-        result += buffer.data();
-    return result;
+	std::array<char, 512> buffer;
+	std::string result;
+	std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.data(), "r"), pclose);
+	if (!pipe) return "";
+	while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+		result += buffer.data();
+	return result;
 }
 
 std::vector<std::string> split(const std::string &str, const std::string &delims)
@@ -37,22 +61,5 @@ std::vector<std::string> split(const std::string &str, const std::string &delims
 }
 
 } // namespace detail
-
-std::vector<std::string> fzf(std::string elems)
-{
-	std::string s = detail::exec("echo -e \"" + elems + "\" | fzf -m");
-	return detail::split(s, "\n");
-}
-
-std::vector<std::string> fzf(std::vector<std::string> elems)
-{
-	std::string es = "";
-	for (const auto &e : elems) {
-		es += e;
-		es += "\n";
-	}
-	es.pop_back();
-	return fzf(es);
-}
 
 } // namespace hort
