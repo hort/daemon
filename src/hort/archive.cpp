@@ -5,18 +5,6 @@
 namespace hort
 {
 
-Archive::Archive() : archive{nullptr} {}
-
-Archive::Archive(const std::string &filepath) : archive{nullptr}
-{
-	open(filepath);
-};
-
-Archive::~Archive()
-{
-	close();
-}
-
 bool Archive::open(const std::string &filepath)
 {
 	if (archive)
@@ -30,8 +18,12 @@ void Archive::close()
 	if (archive) {
 		zip_close(archive);
 		archive = nullptr;
-		for (auto pointer : allocated)
-			free(pointer);
+		for (auto &pointer : allocated) {
+			if (pointer) {
+				free(pointer);
+				pointer = nullptr;
+			}
+		}
 	}
 }
 
@@ -44,7 +36,7 @@ int Archive::add(const std::string &filepath, const std::string &bin)
 
 	// allocate the binary data in the heap, will later have free
 	char *p = (char*)malloc(bin.size());
-	allocated.emplace_back(p);
+	allocated.push_back(p);
 	memcpy(p, bin.c_str(), bin.size());
 
 	// add a file entry in the archive and write the binary data to the file
