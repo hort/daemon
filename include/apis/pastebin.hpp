@@ -10,18 +10,18 @@ HORT_INTERFACE(Pastebin)
 {
 
 public:
-	Pastebin(std::string username = "", std::string password = "");
+	Pastebin();
 
 	/// \brief Download all authors' pastes.
-	int download_paste(std::string id);
+	int download_paste(const std::string &id);
 
 	/// \brief Download paste given it's id, title and authors' username.
 	/// \return true if paste is already downloaded
-	int download_paste(std::string id, std::string title, std::string username);
+	int download_paste(const std::string &id, std::string title, const std::string &username);
 
 	/// \brief Download paste given it's id.
 	/// \return true if paste is already downloaded
-	int download_user(std::string username);
+	int download_user(const std::string &username);
 
 private:
 
