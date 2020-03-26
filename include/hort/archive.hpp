@@ -1,72 +1,62 @@
-#ifndef ZIP_HPP_
-#define ZIP_HPP_
+#ifndef HORT_ARCHIVE_HPP_
+#define HORT_ARCHIVE_HPP_
 
 #include <map>
+#include <mutex>
 #include <stdio.h>
 #include <string.h>
 #include <string>
 #include <vector>
+
 #include <zip.h>
-#include <mutex>
 
-namespace hort
-{
+#include "hort/vector.hpp"
+#include "hort/string.hpp"
 
-/// \brief Wrapper around libzip archive.
-class Archive
-{
+namespace hort {
 
-	zip *archive;
-	std::vector<char*> allocated;
+/// \brief Wrapper around libzip archive. Thread safe.
+/// TODO: complete read function
+/// TODO: automatically add directories when adding files
+class archive {
+private:
+  std::mutex mutex;
 
-public:
-	Archive() : archive{nullptr} {}
-	Archive(const std::string &filepath): archive{nullptr} { open(filepath); }
-	~Archive() { close(); };
+  zip* zp = nullptr;
 
-	bool open(const std::string &filepath);
-	void close();
+  struct stat {
+    std::string name;
+    std::size_t index;
+    std::size_t size;
+  };
 
-	/// \bierf Add binary data to archive.
-	/// \return index of the newly added file -1 on error, -2 if the archive
-	/// hasn't been opened.
-	int add(const std::string &filepath, const std::string &bin);
-
-	/// \brief Add files to archive in bulk.
-	/// \return 0 on success, -1 on error, -2 if the archive hasn't been opened.
-	int add(const std::map<std::string, std::string> &files);
-
-};
-
-namespace threaded {
-
-/// \brief Thread safe wrapper around libzip archive.
-class Archive : public hort::Archive {
-	std::mutex mutex;
+  /// \brief List of files in archive.
+  hort::vector<stat> files;
 
 public:
+  explicit archive() : archive{nullptr} {}
+  explicit archive(const std::string& filepath) { open(filepath); }
+  ~archive() { close(); };
 
-	/// \bierf Add binary data to archive.
-	/// \return index of the newly added file -1 on error, -2 if the archive
-	/// hasn't been opened.
-	int add(const std::string &filepath, const std::string &bin)
-	{
-		std::lock_guard<std::mutex> lock{mutex};
-		return hort::Archive::add(filepath, bin);
-	}
+  /// \return Returns true if succesful, otherwise false.
+  bool open(const std::string& filepath);
 
-	/// \brief Add files to archive in bulk.
-	/// \return 0 on success, -1 on error, -2 if the archive hasn't been opened.
-	int add(const std::map<std::string, std::string> &files)
-	{
-		std::lock_guard<std::mutex> lock{mutex};
-		return hort::Archive::add(files);
-	}
+  /// \brief Write changes to archive.
+  void close();
+
+  /// \brief Add binary data to archive.
+  /// \return Returns true if succesful, otherwise false.
+  bool add(const hort::string& filepath, const std::string& source);
+
+  /// \brief Delete `filepath`.
+  /// \return Returns true if succesful, otherwise false.
+  bool remove(const std::string& filepath);
+
+  /// \brief Read archive stats.
+  void read();
 
 };
-
-} // namespace threaded
 
 } // namespace hort
 
-#endif /* ZIP_HPP_ */
+#endif /* ZIP_ARCHIVE_HPP_ */

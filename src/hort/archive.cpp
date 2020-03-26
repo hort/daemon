@@ -2,58 +2,63 @@
 
 #include <cstring>
 
-namespace hort
-{
+namespace hort {
 
-bool Archive::open(const std::string &filepath)
-{
-	if (archive)
-		return false;
-	archive = zip_open(filepath.c_str(), ZIP_CREATE, nullptr);
-	return archive != nullptr;
+bool archive::open(const std::string& filepath) {
+  std::lock_guard<std::mutex> lock{mutex};
+  if (zp) {
+    return false;
+  }
+  zp = zip_open(filepath.c_str(), ZIP_CREATE, nullptr);
+  return zp != nullptr;
 }
 
-void Archive::close()
-{
-	if (archive) {
-		zip_close(archive);
-		archive = nullptr;
-		for (auto &pointer : allocated) {
-			if (pointer) {
-				free(pointer);
-				pointer = nullptr;
-			}
-		}
-	}
+void archive::close() {
+  std::lock_guard<std::mutex> lock{mutex};
+  if (zp) {
+    zip_close(zp);
+    zp = nullptr;
+  }
 }
 
-int Archive::add(const std::string &filepath, const std::string &bin)
-{
-	if (!archive)
-		return -2;
-	zip_source *source = nullptr;
-	int index = -1;
+bool archive::add(const hort::string& filepath, const std::string& source) {
+  std::lock_guard<std::mutex> lock{mutex};
+  if (!zp) {
+    return false;
+  }
 
-	// allocate the binary data in the heap, will later have free
-	char *p = (char*)malloc(bin.size());
-	allocated.push_back(p);
-	memcpy(p, bin.c_str(), bin.size());
+  zip_source* zs = zip_source_buffer(zp, source.c_str(), source.size(), 1);
+  int index      = zip_file_add(zp, filepath.c_str(), zs, ZIP_FL_OVERWRITE);
 
-	// add a file entry in the archive and write the binary data to the file
-	source = zip_source_buffer(archive, p, bin.size(), 1);
-	index  = zip_file_add(archive, filepath.c_str(), source, ZIP_FL_OVERWRITE);
+  if (index != -1) {
+    files.emplace_back(stat{filepath, files.size(), source.size()});
+  } else {
+    zip_source_free(zs);
+    return false;
+  }
 
-	return index;
+  return true;
 }
 
-int Archive::add(const std::map<std::string, std::string> &files)
-{
-	if (!archive)
-		return -2;
-	for (const auto &[f, b] : files)
-		if (add(f, b) == -1)
-			return -1;
-	return 0;
+bool archive::remove(const std::string& filepath) {
+  auto index =
+      files.index([&filepath](const stat& s) { return s.name == filepath; });
+  return zip_delete(zp, index) != -1;
+}
+
+void archive::read() {
+  std::lock_guard<std::mutex> lock{mutex};
+  if (!zp) {
+    return;
+  }
+
+  struct zip_stat zs;
+
+  for (std::size_t i = 0; i < zip_get_num_entries(zp, 0); i++) {
+    if (zip_stat_index(zp, i, 0, &zs) == 0) {
+      files.push_back(stat{zs.name, i, zs.size});
+    }
+  }
 }
 
 } // namespace hort
