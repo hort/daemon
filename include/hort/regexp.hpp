@@ -4,16 +4,20 @@
 #include <re2/re2.h>
 
 #include "hort/vector.hpp"
+#include "hort/string.hpp"
 
 namespace hort::regexp {
 
-using Match = hort::vector<std::string>;
-
 namespace detail {
 
-Match findall(const re2::RE2& re, const std::string& target);
-Match find(const re2::RE2& re, const std::string& target);
-bool match(const re2::RE2& re, const std::string& target);
+vector<string> findall(const re2::RE2& re, const std::string& target);
+
+vector<string> find(const re2::RE2& re, const std::string& target);
+
+inline bool match(const re2::RE2& re, const std::string& target) {
+  re2::StringPiece input{target};
+  return re2::RE2::FullMatch(input, re);
+}
 
 template <typename... Args>
 inline void find(const re2::RE2& re, const std::string& target, Args&... args) {
@@ -24,16 +28,25 @@ inline void find(const re2::RE2& re, const std::string& target, Args&... args) {
 } // namespace detail
 
 /// \brief Find all occurence of `pattern` in `target`.
-[[nodiscard]] inline Match findall(const std::string& pattern,
-                                   const std::string& target);
+[[nodiscard]] inline vector<string> findall(const std::string& pattern,
+                                   const std::string& target) {
+  re2::RE2 re(pattern);
+  return detail::find(re, target);
+}
 
 /// \brief Find first occurence of `pattern` in `target`.
-[[nodiscard]] inline Match find(const std::string& pattern,
-                                const std::string& target);
+[[nodiscard]] inline vector<string> find(const std::string& pattern,
+                                const std::string& target) {
+  re2::RE2 re(pattern);
+  return detail::findall(re, target);
+}
 
 /// \brief Check if `pattern` matches `target`.
 [[nodiscard]] inline bool match(const std::string& pattern,
-                                const std::string& target);
+                                const std::string& target) {
+  re2::RE2 re(pattern);
+  return detail::match(re, target);
+}
 
 /// \brief Find first occurence of "pattern" in "target" and save the results
 /// inside the variadic arguments.
@@ -82,12 +95,12 @@ public:
       , pattern{other.pattern} {}
 
   /// \brief Find all occurence of `pattern` in `target`.
-  [[nodiscard]] Match findall(const std::string& target) const {
+  [[nodiscard]] vector<string> findall(const std::string& target) const {
     return detail::findall(r, target);
   }
 
   /// \brief Find first occurence of `pattern` in `target`.
-  [[nodiscard]] Match find(const std::string& target) const {
+  [[nodiscard]] vector<string> find(const std::string& target) const {
     return detail::find(r, target);
   }
 

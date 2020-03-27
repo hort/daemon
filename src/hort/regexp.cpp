@@ -1,11 +1,9 @@
 #include "hort/regexp.hpp"
 
-namespace hort::regexp {
+namespace hort::regexp::detail {
 
-namespace detail {
-
-Match findall(const re2::RE2& re, const std::string& target) {
-  Match match;
+vector<string> findall(const re2::RE2& re, const std::string& target) {
+  vector<string> match;
 
   auto ngroups = re.NumberOfCapturingGroups();
   std::vector<re2::RE2::Arg> argv(ngroups);
@@ -26,8 +24,8 @@ Match findall(const re2::RE2& re, const std::string& target) {
   return match;
 }
 
-Match search(const re2::RE2& re, const std::string& target) {
-  Match match;
+vector<string> search(const re2::RE2& re, const std::string& target) {
+  vector<string> match;
 
   auto ngroups = re.NumberOfCapturingGroups();
   std::vector<re2::RE2::Arg> argv(ngroups);
@@ -47,26 +45,4 @@ Match search(const re2::RE2& re, const std::string& target) {
   return match;
 }
 
-bool match(const re2::RE2& re, const std::string& target) {
-  re2::StringPiece input{target};
-  return re2::RE2::FullMatch(input, re);
-}
-
-} // namespace detail
-
-Match find(const std::string& pattern, const std::string& target) {
-  re2::RE2 re(pattern);
-  return detail::find(re, target);
-}
-
-Match findall(const std::string& pattern, const std::string& target) {
-  re2::RE2 re(pattern);
-  return detail::findall(re, target);
-}
-
-bool match(const std::string& pattern, const std::string& target) {
-  re2::RE2 re(pattern);
-  return detail::match(re, target);
-}
-
-} // namespace hort::regexp
+} // namespace hort::regexp::detail
