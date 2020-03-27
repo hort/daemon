@@ -10,14 +10,13 @@
 
 #include <zip.h>
 
-#include "hort/vector.hpp"
 #include "hort/string.hpp"
+#include "hort/vector.hpp"
 
 namespace hort {
 
 /// \brief Wrapper around libzip archive. Thread safe.
-/// TODO: complete read function
-/// TODO: automatically add directories when adding files
+/// TODO: automatically create directories when adding files
 class archive {
 private:
   std::mutex mutex;
@@ -31,7 +30,7 @@ private:
   };
 
   /// \brief List of files in archive.
-  hort::vector<stat> files;
+  vector<stat> files;
 
 public:
   explicit archive() : archive{nullptr} {}
@@ -39,10 +38,23 @@ public:
   ~archive() { close(); };
 
   /// \return Returns true if succesful, otherwise false.
-  bool open(const std::string& filepath);
+  bool open(const std::string& filepath) {
+    std::lock_guard<std::mutex> lock{mutex};
+    if (zp) {
+      return false;
+    }
+    zp = zip_open(filepath.c_str(), ZIP_CREATE, nullptr);
+    return zp != nullptr;
+  }
 
   /// \brief Write changes to archive.
-  void close();
+  void close() {
+    std::lock_guard<std::mutex> lock{mutex};
+    if (zp) {
+      zip_close(zp);
+      zp = nullptr;
+    }
+  }
 
   /// \brief Add binary data to archive.
   /// \return Returns true if succesful, otherwise false.
@@ -50,11 +62,14 @@ public:
 
   /// \brief Delete `filepath`.
   /// \return Returns true if succesful, otherwise false.
-  bool remove(const std::string& filepath);
+  bool remove(const std::string& filepath) {
+    auto index =
+        files.index([&filepath](const stat& s) { return s.name == filepath; });
+    return zip_delete(zp, index) != -1;
+  }
 
   /// \brief Read archive stats.
   void read();
-
 };
 
 } // namespace hort
