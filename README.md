@@ -2,22 +2,44 @@
 
 hort aims to be a high performance data mining and data scraping framework.
 
-## Used Services 
+I'm planning to develop a scripting language around this framework aimed at
+quick scraper development **without any boilerplate** code.
+
+## Dependencies
+
+- curl
+- fmt
+- libzip
+- md5
+- mongocxx
+- nhlomann/json
+- rapidxml
+- re2
+- yaml-cpp
+
+## Monitoring Services
+
 - Logging: Loki ([mircodezorzi/loki-cpp](http://github.com/mircodezorzi/loki-cpp))
-- Monitoring: Promotheus
-- Indexing: MongoDB
+- Monitoring: Promotheus ([jupp0r/prometheus-cpp](https://github.com/jupp0r/prometheus-cpp))
 
 ## Current Code Base
 
-- Filesystem
-- HTTP (libcurl wrapper)
-- Regex (RE2 wrapper)
-- Archive (libzip wrapper)
+### STL 
+
+- `hort::filesystem`: filesystem operations
+- `hort::http`: libcurl wrapper
+- `hort::regexp`: RE2 wrapper
+- `hort::archive`: libzip wrapper
+- `hort::print`: fmt wrapper
+- `hort::string`, `hort::vector`: thin wrappers around std classes
+
+### Infrastructure
+
+- `hort::Registry`
+- `hort::Interface`
+- `hort::Index`
 
 ## Plans for the future
 
-- Writing a solid STL aimed at scraping
-	- Automated monitoring
-	- High level data processing 
-	- Intelligent rate limiters
-- Developing a scripting language aimed at quick scraper development without **any** boilerplate code
+- Automated parallel pipelines
+- Intelligent rate limiters
