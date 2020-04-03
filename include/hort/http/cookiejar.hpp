@@ -1,47 +1,53 @@
-#ifndef HTTP_COOKIEJAR_HPP_
-#define HTTP_COOKIEJAR_HPP_
+#ifndef HORT_HTTP_COOKIEJAR_HPP_
+#define HORT_HTTP_COOKIEJAR_HPP_
 
 #include <curl/curl.h>
 #include <map>
 
-namespace hort::http
-{
+namespace hort::http {
 
 /// \brief Handle HTTP session cookies.
-class CookieJar
-{
+/// TODO: domain and expiration handling
+class CookieJar {
 
-	std::map<std::string, std::string> data;
-	std::string filepath;
-	std::string cached;
-	bool changed = true;
+  std::map<std::string, std::string> data;
+  std::string filepath;
+  std::string cached = "";
+  bool changed = true;
 
-	/// \brief Find nth delim after in str after position s.
-	int find_nth(const std::string &str, char delim, int n, int s = 0);
+  /// \brief Find nth delim after in str after position s.
+  /// \param n nth position to check
+  /// \param s starting position
+  int find_nth(const std::string& str, char delim, int n, int s = 0);
 
 public:
-	CookieJar(std::string filepath_);
+  explicit CookieJar(std::string filepath_) : filepath{filepath_} {};
 
-	std::string get(const std::string &key) const;
-	void set(const std::string &key, std::string value);
-	void erase(const std::string &key);
-	void clear();
+  [[nodiscard]] std::string get(const std::string& key) const;
 
-	/// \brief Parse incoming cookies from a response.
-	void parse(struct curl_slist *unparsed);
+  [[nodiscard]] std::string &operator[](const std::string key);
 
-	/// \brief Serialize cookies to string. Caches if jar isn't modified.
-	/// \return const reference to cached serialized jar.
-	const std::string &serialize();
+  void set(const std::string& key, const std::string &value);
 
-	/// \brief Save cookies to file.
-	void load();
+  void erase(const std::string& key);
 
-	/// \brief Load cookies from file.
-	void save();
+  void clear();
+
+  /// \brief Parse incoming cookies from a response.
+  void parse(struct curl_slist* unparsed);
+
+  /// \brief Serialize cookies to string. Caches if jar isn't modified.
+  /// \return Cached serialized jar.
+  const std::string& serialize();
+
+  /// \brief Save cookies to file.
+  void load();
+
+  /// \brief Load cookies from file.
+  void save();
 
 };
 
 } // namespace hort::http
 
-#endif /* HTTP_COOKIEJAR_HPP_ */
+#endif /* HORT_HTTP_COOKIEJAR_HPP_ */
