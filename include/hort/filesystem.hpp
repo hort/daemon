@@ -17,6 +17,12 @@ template <typename... Args>
 /// \brief Create directories to path.
 inline int mkpath(std::string path);
 
+/// \brief Create directories to path.
+template <typename... Args>
+inline bool mkpath(const Args&... args) {
+  return mkpath("/"_join(args...));
+}
+
 /// \brief Save bin to filepath/filename. If file already exists overwrites it.
 inline int write(const std::string& source,
                  const std::string& filepath,

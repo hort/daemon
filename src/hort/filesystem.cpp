@@ -9,7 +9,7 @@ namespace hort::filesystem {
 
 bool exists(const std::string& path) {
   struct stat buffer;
-  return (stat(name.data(), &buffer) == 0);
+  return (stat(path.data(), &buffer) == 0);
 }
 
 int mkpath(std::string path) {
