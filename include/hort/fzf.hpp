@@ -1,30 +1,25 @@
-#ifndef FZF_HPP_
-#define FZF_HPP_
+#ifndef HORT_FZF_HPP_
+#define HORT_FZF_HPP_
 
-#include <string>
-#include <vector>
+#include "hort/string.hpp"
+#include "hort/vector.hpp"
 
 namespace hort {
 
-namespace detail
-{
+namespace detail {
 
 /// \brief Execute a command and return it's output.
-std::string exec(const std::string &cmd);
+string exec(const string& cmd);
 
-//// \brief Split string into vector by delim
-std::vector<std::string> split(const std::string &str, const std::string &delims);
-
-[[nodiscard]] inline std::string fzf(const std::string &str)
-{
-	return detail::exec("echo -e '" + str + "' | fzf -m");
+[[nodiscard]] inline string fzf(const std::string& str) {
+  return detail::exec("echo -e '" + str + "' | fzf -m");
 }
 
 } // namespace detail
 
 /// \brief Given a list strings, pass it to fzf and return the result.
-[[nodiscard]] std::vector<std::string> fzf(const std::vector<std::string> &entries);
+[[nodiscard]] vector<string> fzf(const vector<string>& entries);
 
 } // namespace hort
 
-#endif /* FZF_HPP_ */
+#endif /* HORT_FZF_HPP_ */
