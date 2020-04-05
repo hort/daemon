@@ -12,32 +12,9 @@ namespace hort {
 
 class Registry {
 
-public:
-  Registry()
-      : interfaces{}
-      , argparser{"hortd", "Data hoarding and indexing framework"} {
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-  }
-
-  ~Registry() { curl_global_cleanup(); }
-
-  static Registry* instance() {
-    static Registry* registry = nullptr;
-    if (registry == nullptr) {
-      registry = new Registry();
-    }
-    return registry;
-  }
-
-  void parse(int argc, char* argv[]) {
-    if (argc < 2) {
-      argparser.help();
-    }
-    argparser.parse(argc, argv);
-  }
-
+  /// \brief Return the types name (all lowercase).
   template <typename T>
-  static std::string& get_type_name() {
+  static std::string& get_type_name_lower() {
     static std::string name;
 
     if (name.empty()) {
@@ -45,69 +22,70 @@ public:
       int s = name.find("with T = ");
       int e = name.find(";", s);
       name  = name.substr(s + 9, e - s - 9);
+      for (auto & i : name) {
+        if (i >= 'A' && i <= 'Z') i += 32;
+      }
     }
 
     return name;
   }
 
+  std::map<string, std::unique_ptr<Interface>> interfaces{};
+  std::map<string, vector<string>> methods{};
+  Args argparser{"hortd", "Data hoarding and indexing framework", "0.1.0"};
+
+public:
+  Registry() {
+    argparser.add("-r", "--repl", "Run REPL", [this]() {
+      repl();
+    });
+    argparser.add("-f", "--forward", "Forward", [this](const std::string &s) {
+      forward(s);
+    });
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+  }
+
+  ~Registry() { curl_global_cleanup(); }
+
+  static Registry* instance() {
+    static std::unique_ptr<Registry> registry;
+    if (registry == nullptr) {
+      registry = std::make_unique<Registry>();
+    }
+    return registry.get();
+  }
+
+  void parse(int argc, char* argv[]);
+
   template <typename T>
-  void add() {
-    string name = get_type_name<T>();
-    interfaces.emplace(make_pair(name.lower(), std::make_unique<T>()));
+  constexpr void add() {
+    auto name = get_type_name_lower<T>();
+    interfaces.emplace(make_pair(name, std::make_unique<T>()));
   }
 
-  void repl() {
-    while (true) {
-      auto m = input("(hort) ");
-      if (m == "quit" || m == "exit") { break; }
-      if (m == "list") { for (const auto &[n, _] : interfaces) { print<string>(n); } }
-      if (interfaces.find(m) != interfaces.end()) {
-        while (true) {
-          auto f = input("({}) "_format(m));
-          if (f == "quit" || f == "exit") { break; }
-          if (f == "archive") { interfaces[m]->archive(); }
-          else if (!interfaces[m]->forward(m)) {
-            std::vector<std::string> v;
-            while (true) {
-              auto i = input("tag > ");
-              if (i == "") { break; }
-              v.push_back(i);
-            }
-            interfaces[m]->subscribe(f, v);
-          }
-        }
-      } else {
-        forward(m);
-      }
-    }
+  template <typename T>
+  constexpr void method(const std::string &description) {
+    auto name = get_type_name_lower<T>();
+    methods[name].push_back(description);
   }
 
-  void auth() {
-    for (auto& [n, i] : interfaces) {
-      i->auth();
-    }
-  }
+  void repl();
 
-  void forward(std::string s) {
-    for (auto& [n, i] : interfaces) {
-      i->forward(s);
-    }
-  }
+  void auth();
 
-  std::map<string, std::unique_ptr<Interface>> interfaces;
-  Args argparser;
-
+  void forward(const std::string &s);
 
 };
 
 template <typename T>
 struct AutoRegistry {
-  AutoRegistry() {
-    static bool once = false;
-    if (!once) {
-      Registry::instance()->add<T>();
-      once = true;
-    }
+  constexpr AutoRegistry() {
+    Registry::instance()->add<T>();
+  }
+
+  constexpr void *method() {
+    Registry::instance()->method<T>("Hello, World!");
+    return nullptr;
   }
 };
 
