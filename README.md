@@ -17,29 +17,56 @@ quick scraper development **without any boilerplate** code.
 - re2
 - yaml-cpp
 
-## Monitoring Services
+## Example
 
-- Logging: Loki ([mircodezorzi/loki-cpp](http://github.com/mircodezorzi/loki-cpp))
-- Monitoring: Promotheus ([jupp0r/prometheus-cpp](https://github.com/jupp0r/prometheus-cpp))
+``` c++
+// interfaces/foo.hpp
+#include "hort/interface.hpp"
+
+HORT_INTERFACE(foo) {
+  void archive(); 
+}
+```
+
+```
+$ hortd -r
+(hort) list
+foo
+(hort) foo
+(foo) archive
+archiving...
+```
+
+## ~~Monitoring Services~~
+
+I'll put this on hold for some time...
+
+- ~~Logging: Loki~~ ([~~mircodezorzi/loki-cpp~~](http://github.com/mircodezorzi/loki-cpp))
+- ~~Monitoring: Promotheus~~ ([~~jupp0r/prometheus-cpp~~](https://github.com/jupp0r/prometheus-cpp))
 
 ## Current Code Base
 
 ### STL 
 
+- `hort::archive`: libzip wrapper
 - `hort::filesystem`: filesystem operations
 - `hort::http`: libcurl wrapper
-- `hort::regexp`: RE2 wrapper
-- `hort::archive`: libzip wrapper
 - `hort::print`: fmt wrapper
-- `hort::string`, `hort::vector`: thin wrappers around std classes
+- `hort::regexp`: RE2 wrapper
+- `hort::string`: thin std::string wrapper
+- `hort::vector`: thin std::vector wrapper
 
 ### Infrastructure
 
-- `hort::Registry`
-- `hort::Interface`
-- `hort::Index`
+- `hort::Args`: argument parsing
+- `hort::Index`: MongoDB interface
+- `hort::Interface`: user defined API interfaces
+- `hort::Registry`: handles the entire infrastructure
+- `hort::Session`: HTTP session management
 
 ## Plans for the future
 
 - Automated parallel pipelines
 - Intelligent rate limiters
+- Code reflection (?)
+- Dockerize the entire infrastructure
