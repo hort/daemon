@@ -1,0 +1,17 @@
+---
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: 'true'
+AllowShortBlocksOnASingleLine: 'true'
+AlwaysBreakTemplateDeclarations: 'Yes'
+BinPackParameters: 'false'
+BreakBeforeBraces: Attach
+IndentCaseLabels: 'false'
+IndentWidth: '2'
+Language: Cpp
+PointerAlignment: Left
+ReflowComments: 'true'
+SortIncludes: 'true'
+UseTab: Never
+
+...
