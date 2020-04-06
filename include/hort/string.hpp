@@ -75,44 +75,35 @@ public:
   }
 };
 
-struct formatter {
-  std::string_view format;
-
-  constexpr explicit formatter(std::string_view format_) : format{format_} {}
-
-  template <typename... Args>
-  hort::string operator()(const Args&... args) {
-    fmt::format_args argspack = fmt::make_format_args(args...);
-    return fmt::vformat(format, argspack);
-  }
-};
-
 struct joiner {
   std::string_view separator;
 
-  constexpr explicit joiner(std::string_view separator_) : separator{separator_} {}
+  constexpr explicit joiner(std::string_view separator_)
+    : separator{separator_} {}
 
   template <typename... Args>
-  hort::string operator()(const Args&... args) {
+  string operator()(const Args&... args) {
     return impl(args...);
   }
 
-  template <typename T, typename ... Args>
-  hort::string impl(const T &t, const Args&... args) {
+  template <typename T, typename... Args>
+  string impl(const T& t, const Args&... args) {
     return t + std::string(separator) + impl(args...);
   }
 
-  template <typename T, typename ... Args>
-  hort::string impl(const T &t) {
+  template <typename T>
+  string impl(const T& t) {
     return t;
   }
 };
 
-
 } // namespace hort
 
 [[nodiscard]] constexpr auto operator"" _format(const char* format, std::size_t) {
-  return hort::formatter{format};
+  return [format](const auto&... args) {
+    fmt::format_args argspack = fmt::make_format_args(args...);
+    return fmt::vformat(format, argspack);
+  };
 }
 
 [[nodiscard]] constexpr auto operator"" _join(const char* separator, std::size_t) {
