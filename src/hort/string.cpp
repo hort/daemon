@@ -4,8 +4,7 @@ namespace hort {
 
 vector<string> string::split(const string& delims) const {
   vector<string> output{};
-
-  std::string::size_type first = 0;
+  std::size_t first = 0;
   while (first < this->size()) {
     const auto second = this->find_first_of(delims, first);
     if (first != second) {
@@ -18,8 +17,8 @@ vector<string> string::split(const string& delims) const {
 }
 
 string string::replace(const string& from, const string& to) const {
-  string str               = *this;
-  std::string::size_type n = 0;
+  string str    = *this;
+  std::size_t n = 0;
   while ((n = str.find(from, n)) != std::string::npos) {
     str.replace(n, from.size(), to);
     n += to.size();
