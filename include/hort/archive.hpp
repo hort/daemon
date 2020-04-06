@@ -16,7 +16,7 @@
 namespace hort {
 
 /// \brief Wrapper around libzip archive. Thread safe.
-/// TODO: automatically create directories when adding files
+/// TODO: create directories when adding files
 class archive {
 private:
   std::mutex mutex;
@@ -38,23 +38,10 @@ public:
   ~archive() { close(); };
 
   /// \return Returns true if succesful, otherwise false.
-  bool open(const std::string& filepath) {
-    std::lock_guard<std::mutex> lock{mutex};
-    if (zp) {
-      return false;
-    }
-    zp = zip_open(filepath.c_str(), ZIP_CREATE, nullptr);
-    return zp != nullptr;
-  }
+  bool open(const std::string& filepath);
 
   /// \brief Write changes to archive.
-  void close() {
-    std::lock_guard<std::mutex> lock{mutex};
-    if (zp) {
-      zip_close(zp);
-      zp = nullptr;
-    }
-  }
+  void close();
 
   /// \brief Add binary data to archive.
   /// \return Returns true if succesful, otherwise false.
@@ -62,11 +49,7 @@ public:
 
   /// \brief Delete `filepath`.
   /// \return Returns true if succesful, otherwise false.
-  bool remove(const std::string& filepath) {
-    auto index =
-        files.index([&filepath](const stat& s) { return s.name == filepath; });
-    return zip_delete(zp, index) != -1;
-  }
+  bool remove(const std::string& filepath);
 
   /// \brief Read archive stats.
   void read();

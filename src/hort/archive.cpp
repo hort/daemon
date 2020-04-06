@@ -1,15 +1,38 @@
 #include "hort/archive.hpp"
 
-#include <cstring>
-
 namespace hort {
+
+bool archive::open(const std::string& filepath) {
+  std::lock_guard<std::mutex> lock{mutex};
+  if (zp) {
+    return false;
+  }
+  zp = zip_open(filepath.c_str(), ZIP_CREATE, nullptr);
+  return zp != nullptr;
+}
+
+void archive::close() {
+  std::lock_guard<std::mutex> lock{mutex};
+  if (zp) {
+    zip_close(zp);
+    zp = nullptr;
+  }
+}
 
 bool archive::add(const hort::string& filepath, const std::string& source) {
   std::lock_guard<std::mutex> lock{mutex};
   if (!zp) return false;
 
-  zip_source* zs = zip_source_buffer(zp, source.c_str(), source.size(), 1);
-  int index      = zip_file_add(zp, filepath.c_str(), zs, ZIP_FL_OVERWRITE);
+  zip_source *zs = nullptr;
+  int index = -1;
+
+  // allocate the binary data in the heap, will later have free
+  char *p = (char*)malloc(source.size());
+  memcpy(p, source.c_str(), source.size());
+
+  // add a file entry in the zp and write the sourceary data to the file
+  zs    = zip_source_buffer(zp, p, source.size(), 1);
+  index = zip_file_add(zp, filepath.c_str(), zs, ZIP_FL_OVERWRITE);
 
   if (index != -1) {
     files.emplace_back(stat{filepath, files.size(), source.size()});
@@ -19,6 +42,12 @@ bool archive::add(const hort::string& filepath, const std::string& source) {
   }
 
   return true;
+}
+
+bool archive::remove(const std::string& filepath) {
+  auto index =
+      files.index([&filepath](const stat& s) { return s.name == filepath; });
+  return zip_delete(zp, index) != -1;
 }
 
 void archive::read() {
