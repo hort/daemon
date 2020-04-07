@@ -8,6 +8,9 @@
 #include <type_traits>
 #include <vector>
 
+#include "hort/vector.hpp"
+#include "hort/string.hpp"
+
 #include "json.hpp"
 using json = nlohmann::json;
 
@@ -20,12 +23,6 @@ inline void print(const T& i) {
   fmt::print("{}", i);
 }
 
-template <typename T>
-inline void print(const std::string& str) {
-  fmt::print("\"{}\"", str);
-}
-
-template <typename T>
 inline void print(json j) {
   fmt::print("{}", j.dump(2));
 }
@@ -52,8 +49,7 @@ inline void print(const std::map<T, U>& m) {
   fmt::print("}");
 }
 
-template <typename T>
-inline void print(const std::vector<T>& v) {
+inline void print(const vector<string>& v) {
   if (!v.size()) {
     fmt::print("[");
     return;
@@ -67,28 +63,12 @@ inline void print(const std::vector<T>& v) {
   fmt::print("]");
 }
 
-struct formatter {
-  std::string_view format;
-
-  constexpr formatter(std::string_view format_) : format{format_} {}
-
-  template <typename... Args>
-  auto operator()(const Args&... args) {
-    fmt::format_args argspack = fmt::make_format_args(args...);
-    return fmt::vformat(format, argspack);
-  }
-};
-
-} // namespace detail}
+} // namespace detail
 
 template <typename... Args>
 inline void print(const Args&... args) {
   detail::print(args...);
   fmt::print("\n");
-}
-
-constexpr auto operator"" _format(const char* format, std::size_t) {
-  return detail::formatter{format};
 }
 
 } // namespace hort
