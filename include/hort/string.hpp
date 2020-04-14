@@ -97,6 +97,24 @@ struct joiner {
   }
 };
 
+template <typename ... Args>
+constexpr auto concat(Args ... args) {
+    constexpr auto size = [] (std::string_view str) {
+        return str.size() - 1;
+    };
+
+    char buffer[(size(args) + ...)];
+    int index = 0;
+
+    (([&index, &buffer](std::string_view str) {
+        for (const auto & i : str) {
+            buffer[index++] = i;
+        }
+    })(args), ...);
+
+    return std::string_view{buffer};
+}
+
 } // namespace hort
 
 [[nodiscard]] constexpr auto operator"" _format(const char* format, std::size_t) {
