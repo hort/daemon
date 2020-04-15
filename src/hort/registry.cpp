@@ -26,13 +26,20 @@ void Registry::repl() {
     auto m = input("(hort) ").trim();
     if (m == "quit" || m == "exit") { break; }
     if (m == "list") { for (const auto &[n, _] : interfaces) { print(n); } }
-    if (m == "methods") { for (const auto &[k, v] : methods) { for (const auto &m : v) print(m); } }
+
+    if (m == "methods") {
+      for (const auto &[k, v] : methods) {
+        for (const auto &m : v)
+          print(k, m.name, m.description);
+      }
+    }
+
     if (interfaces.find(m) != interfaces.end()) {
       while (true) {
         auto f = input("({}) "_format(m)).trim();
         if (f == "quit" || f == "exit") { break; }
         if (f == "archive") { interfaces[m]->archive(); }
-        else if (!interfaces[m]->forward(m)) {
+        else if (!interfaces[m]->forward(m.trim())) {
           std::vector<std::string> v;
           while (true) {
             auto i = input("tag > ").trim();

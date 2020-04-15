@@ -31,7 +31,15 @@ class Registry {
   }
 
   std::map<string, std::unique_ptr<Interface>> interfaces{};
-  std::map<string, vector<string>> methods{};
+
+
+  struct Method {
+    std::string_view name;
+    std::string_view description;
+  };
+
+  std::map<string, vector<Method>> methods{};
+
   Args argparser{"hortd", "Data hoarding and indexing framework", "0.1.0"};
 
 public:
@@ -44,6 +52,11 @@ public:
     });
     curl_global_init(CURL_GLOBAL_DEFAULT);
   }
+
+  Registry(Registry&&) = delete;
+  Registry(const Registry&) = delete;
+  Registry& operator=(const Registry&) = delete;
+  Registry&& operator=(Registry&&) = delete;
 
   ~Registry() { curl_global_cleanup(); }
 
@@ -64,9 +77,9 @@ public:
   }
 
   template <typename T>
-  constexpr void method(const std::string &description) {
-    auto name = get_type_name_lower<T>();
-    methods[name].push_back(description);
+  constexpr void method(std::string_view name, std::string_view description) {
+    auto interface = get_type_name_lower<T>();
+    methods[interface].push_back({name, description});
   }
 
   void repl();
@@ -83,8 +96,9 @@ struct AutoRegistry {
     Registry::instance()->add<T>();
   }
 
-  constexpr void *method() {
-    Registry::instance()->method<T>("Hello, World!");
+  constexpr void* method(std::string_view name,
+                         std::string_view description) {
+    Registry::instance()->method<T>(name, description);
     return nullptr;
   }
 };
