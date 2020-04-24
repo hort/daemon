@@ -2,9 +2,12 @@
 #define HORT_JIT_LEXER_HPP_
 
 #include <unordered_map>
+#include <optional>
 
 #include "hort/string.hpp"
 #include "hort/vector.hpp"
+
+namespace hort::jit {
 
 struct Lexer {
 
@@ -16,64 +19,82 @@ struct Lexer {
       , String
       , Number
       , Whitespace
-      , None
+      , True
+      , False
       };
+
+    const std::unordered_map<Kind, std::string_view> kinds{
+      { Kind::Symbol, "Symbol" },
+      { Kind::Builtin, "Builtin" },
+      { Kind::String, "String" },
+      { Kind::Number, "Number" },
+      { Kind::Whitespace, "Whitespace" },
+      { Kind::True, "True" },
+      { Kind::False, "False" },
+    };
 
     struct Ln {
       size_t line{0};
       size_t column{0};
+
+      bool operator==(const Ln &other) const noexcept {
+        return line == other.line && column == other.column;
+      }
     };
 
     const Kind kind;
     const std::string value;
     const Ln ln;
 
-    explicit Token(Kind kind_, const std::string &value_, Ln ln_)
+    explicit Token(Kind kind_, const std::string &value_, Ln ln_) noexcept
       : kind{kind_}
       , value{value_}
       , ln{ln_} {}
 
-    std::string colorize() const {
-      switch (kind) {
-        case Kind::Symbol:
-          return "{}";
-        case Kind::Builtin:
-          return "\033[1;31m{}\033[0m";
-        case Kind::String:
-          return "\033[1;32m{}\033[0m";
-        case Kind::Number:
-          return "\033[1;33m{}\033[0m";
-        case Kind::Whitespace:
-          return "{}";
-        case Kind::None:
-          return "{}";
-      }
-      return "<none>";
+    const std::unordered_map<Kind, std::string_view> colorize{
+      { Kind::Symbol,     "{}"                  },
+      { Kind::Builtin,    "\033[1;31m{}\033[0m" },
+      { Kind::String,     "\033[1;32m{}\033[0m" },
+      { Kind::Number,     "\033[1;33m{}\033[0m" },
+      { Kind::Whitespace, "{}"                  },
+      { Kind::True,       "\033[1m{}\033[0m"    },
+      { Kind::False,      "\033[1m{}\033[0m"    },
     };
 
-    std::string fancy_str() const {
-      return fmt::format(colorize(), value);
+    std::string colorized() const {
+      return fmt::format(colorize.find(kind)->second, value);
     }
 
-    std::string str() const {
-      return value;
+    std::string str() const noexcept {
+      return fmt::format("{} = '{}'", kinds.find(kind)->second, value);
     }
 
   };
 
   std::vector<Token> tokens{};
 
+  struct Error {
+    std::string_view message;
+    Lexer::Token::Ln ln{0, 1};
+
+    explicit operator bool() const noexcept {
+      return ln.column != 0;
+    }
+  };
+
+  std::vector<Error> errors;
+
   struct Cursor {
     std::string source;
     decltype(source.cbegin()) iterator{source.cbegin()};
     Token::Ln position{0, 0};
 
-    char peek() const noexcept {
-      return *(iterator + 1);
-    }
-
     char consume() noexcept {
       return *(iterator++);
+    }
+
+    char peek() const noexcept {
+      return *(iterator + 1);
     }
 
     char get() const noexcept {
@@ -106,153 +127,118 @@ struct Lexer {
     }
   } cursor{};
 
-  static const std::unordered_map<std::string_view, Token::Kind> create_tokens() {
-    return []() -> std::unordered_map<std::string_view, Token::Kind> {
-      std::unordered_map<std::string_view, Token::Kind> result;
+  const std::unordered_map<std::string_view, Token::Kind> keywords{
+    { "archive",    Token::Kind::Builtin },
+    { "dump",       Token::Kind::Builtin },
+    { "exit",       Token::Kind::Builtin },
+    { "interfaces", Token::Kind::Builtin },
+    { "use",        Token::Kind::Builtin },
+    { "true",       Token::Kind::True    },
+    { "false",      Token::Kind::False   },
+  };
 
-      result["interfaces"] = Token::Kind::Builtin;
-      result["dump"] = Token::Kind::Builtin;
-      result["archive"] = Token::Kind::Builtin;
-      result["exit"] = Token::Kind::Builtin;
+  explicit Lexer(const std::string &source_)
+    : cursor{source_} {}
 
-      return result;
-    }();
-  }
-
-  static const std::unordered_map<std::string_view, Token::Kind> &build_tokens() {
-    static const std::unordered_map<std::string_view, Token::Kind> result = create_tokens();
-    return result;
-  }
-
-  std::unordered_map<std::string_view, Token::Kind> keywords = build_tokens();
-
-  bool isdigit(char c) const noexcept {
-    switch (c) {
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-        return true;
-        break;
-      default:
-        return false;
+  std::optional<Token> consume() {
+    if (!cursor.has_next()) {
+      return std::nullopt;
     }
-  }
 
-  bool isalpha(char c) const noexcept {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
-  }
+    auto start = cursor.position;
+    std::string str = "";
 
-  Lexer(const std::string &source_) : cursor{source_} {
-    while (cursor.has_next()) {
-      auto start = cursor.position;
-      std::string str;
+    auto val = cursor.get();
 
-      auto val = cursor.get();
-
-      if (isdigit(val)) {
-        while (isdigit(val = cursor.get())) {
-          str += val;
-          cursor.step();
+    if (isdigit(val)) {
+      while ((val = cursor.get()) != ' ' && cursor.has_next()) {
+        if (!isdigit(val)) {
+          errors.emplace_back(Error{"invalid symbol", start});
         }
-        tokens.emplace_back(Token(Token::Kind::Number, str, start));
-        continue;
-      }
-
-      if (val == ' ') {
-        while ((val = cursor.get()) == ' ') {
-          str += val;
-          cursor.step();
-        }
-        tokens.emplace_back(Token(Token::Kind::Whitespace, str, start));
-        continue;
-      }
-
-      if (val == '\'') {
         str += val;
         cursor.step();
-        val = cursor.get();
-        while(val != '\'' && cursor.has_next()) {
-          str += val;
-          cursor.step();
-          val = cursor.get();
-        };
-        str += val;
-        if (cursor.has_next()) {
-          cursor.step();
-        }
-        tokens.emplace_back(Token(Token::Kind::String, str, start));
-        continue;
       }
+      auto token = Token{Token::Kind::Number, str, start};
+      tokens.push_back(token);
+      return token;
+    }
 
-      while(val != ' ' && cursor.has_next()) {
+    if (val == ' ') {
+      while ((val = cursor.get()) == ' ') {
+        str += val;
+        cursor.step();
+      }
+      auto token = Token{Token::Kind::Whitespace, str, start};
+      tokens.push_back(token);
+      return token;
+    }
+
+    if (val == '\'') {
+      str += val;
+      cursor.step();
+      val = cursor.get();
+      while (val != '\'' && cursor.has_next()) {
         str += val;
         cursor.step();
         val = cursor.get();
       };
-
-      if (keywords.find(str) != keywords.end()) {
-        tokens.emplace_back(Token(keywords[str.c_str()], str, start));
+      str += val;
+      if (cursor.has_next()) {
+        cursor.step();
       } else {
-        tokens.emplace_back(Token(Token::Kind::Symbol, str, start));
+        errors.emplace_back(Error{"unmatched '", start});
       }
-
+      auto token = Token{Token::Kind::String, str, start};
+      tokens.push_back(token);
+      return token;
     }
+
+    while (val != ' ' && cursor.has_next()) {
+      str += val;
+      cursor.step();
+      val = cursor.get();
+    };
+
+    if (keywords.find(str) != keywords.end()) {
+      auto token = Token{keywords.find(str.c_str())->second, str, start};
+      tokens.push_back(token);
+      return token;
+    } else {
+      auto token = Token{Token::Kind::Symbol, str, start};
+      tokens.push_back(token);
+      return token;
+    }
+
+  };
+
+  std::string colorized() {
+    std::string str = "";
+    Error error;
+    while (consume());
+    for (int i = 0; const auto &tok : tokens) {
+      if (errors.size()) {
+        error = errors[i];
+      }
+      if (tok.ln == error.ln) {
+        str += "\033[4:3m" + tok.colorized() + "\033[4:0m";
+        i++;
+      } else {
+        str += tok.colorized();
+      }
+    }
+    return str;
   }
 
-  std::string fancy_str() {
+  std::string str() {
     std::string str = "";
-    for (const auto &tok : tokens) {
-      str += tok.fancy_str();
+    for (const auto& tok : tokens) {
+      str += tok.str() + "\n";
     }
     return str;
   }
 
 };
 
-struct Parser {
-
-  struct Cursor {
-    std::vector<Lexer::Token> source;
-    decltype(source.cbegin()) iterator{source.cbegin()};
-
-    Lexer::Token peek() const noexcept {
-      return *(iterator + 1);
-    }
-
-    Lexer::Token consume() noexcept {
-      return *(iterator++);
-    }
-
-    Lexer::Token get() const noexcept {
-      return *iterator;
-    }
-
-    void step(int steps = 1) noexcept {
-      for (; steps > 0; steps--) (*this)++;
-    }
-
-    bool has_next() const noexcept {
-      return iterator != source.end();
-    }
-
-    void operator++([[maybe_unused]] int _) noexcept {
-      iterator++;
-    }
-
-    Lexer::Token operator*() const noexcept {
-      return *iterator;
-    }
-  } cursor{};
-
-  Parser(std::vector<Lexer::Token> &source_) : cursor{source_} {}
-
-};
+} // hort::jit
 
 #endif // HORT_JIT_LEXER_HPP_
