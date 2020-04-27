@@ -23,6 +23,9 @@ quick scraper development **without any boilerplate** code.
 #include "hort/interface.hpp"
 #include "hort/registry.hpp"
 
+/// creates a logger agent to Loki & Prometheus
+/// creates a database agent to MongoDB
+/// creates a HTTP session handler (cookies are automatically saved & loaded)
 HORT_INTERFACE(foo) {
   foo() : hort::Interface{"foo", 
     { HORT_RULE_CALLBACK(R"regex(foo (.*))regex", { hort::print(v[0]); } )
@@ -46,12 +49,18 @@ int main(int argv, char* argv[]) {
 }
 ```
 
+### Forwarding
 ```
 $ hortd -r
 (hort) foo bar
 2020-04-26 17:30:45.8309840654 [ INFO] matched foo bar with interface foo
 bar
 2020-04-26 17:30:47.8564894651 [ INFO] finished match callback with interface foo
+```
+
+### Archiving
+``` c++
+$ hortd -r
 (hort) list
 foo
 (hort) foo
@@ -63,7 +72,7 @@ foo
 
 ## Monitoring Services
 
-- Logging: Loki~~ ([mircodezorzi/loki-cpp](http://github.com/mircodezorzi/loki-cpp))
+- Logging: Loki ([mircodezorzi/loki-cpp](http://github.com/mircodezorzi/loki-cpp))
 - ~~Monitoring: Promotheus~~ ([~~jupp0r/prometheus-cpp~~](https://github.com/jupp0r/prometheus-cpp))
 
 ## Current Code Base
