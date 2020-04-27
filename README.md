@@ -20,49 +20,75 @@ quick scraper development **without any boilerplate** code.
 ## Example
 
 ``` c++
-// interfaces/foo.hpp
 #include "hort/interface.hpp"
+#include "hort/registry.hpp"
 
 HORT_INTERFACE(foo) {
-  void archive(); 
+  foo() : hort::Interface{"foo", 
+    { HORT_RULE_CALLBACK(R"regex(foo (.*))regex", { hort::print(v[0]); } )
+    }
+  } {}
+  
+  void archive() override {
+    logger.Warnf("bar");
+    auto r = session.get("http://example.com/page/{}", 5);
+    index.insert({
+      { "url", r.url },
+      { "content", r.body },
+    });
+    hort::filesystem::write(r.body, hortpath, "foo.txt");
+  }
+}
+
+int main(int argv, char* argv[]) {
+  hort::Registry::instance().parse(argc, argv);
+  return 0;
 }
 ```
 
 ```
 $ hortd -r
+(hort) foo bar
+2020-04-26 17:30:45.8309840654 [ INFO] matched foo bar with interface foo
+bar
+2020-04-26 17:30:47.8564894651 [ INFO] finished match callback with interface foo
 (hort) list
 foo
 (hort) foo
 (foo) archive
-archiving...
+2020-04-26 17:30:59.489904894 [ INFO] started archiving with interface foo
+2020-04-26 17:30:59.543762456 [ WARN] bar
+2020-04-26 17:34:28.553822604 [ INFO] done archiving with interface foo
 ```
 
-## ~~Monitoring Services~~
+## Monitoring Services
 
-I'll put this on hold for some time...
-
-- ~~Logging: Loki~~ ([~~mircodezorzi/loki-cpp~~](http://github.com/mircodezorzi/loki-cpp))
+- Logging: Loki~~ ([mircodezorzi/loki-cpp](http://github.com/mircodezorzi/loki-cpp))
 - ~~Monitoring: Promotheus~~ ([~~jupp0r/prometheus-cpp~~](https://github.com/jupp0r/prometheus-cpp))
 
 ## Current Code Base
 
 ### STL 
 
-- `hort::archive`: libzip wrapper
+#### STD enhancements
+- `hort::string`: thin std::string wrapper
+- `hort::vector`: thin std::vector wrapper
 - `hort::filesystem`: filesystem operations
+
+#### Wrappers
+- `hort::archive`: libzip wrapper
 - `hort::http`: libcurl wrapper
 - `hort::print`: fmt wrapper
 - `hort::regexp`: RE2 wrapper
-- `hort::string`: thin std::string wrapper
-- `hort::vector`: thin std::vector wrapper
 
 ### Infrastructure
 
-- `hort::Args`: argument parsing
+- `hort::Args`: Argument parsing
 - `hort::Index`: MongoDB interface
-- `hort::Interface`: user defined API interfaces
-- `hort::Registry`: handles the entire infrastructure
+- `hort::Interface`: User defined API interfaces
+- `hort::Registry`: Handles the entire infrastructure
 - `hort::Session`: HTTP session management
+- `hort::Worker`: Parallel worker pools
 
 ## Plans for the future
 
