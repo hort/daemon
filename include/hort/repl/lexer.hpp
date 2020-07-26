@@ -1,5 +1,5 @@
-#ifndef HORT_JIT_LEXER_HPP_
-#define HORT_JIT_LEXER_HPP_
+#ifndef HORT_REPL_LEXER_HPP_
+#define HORT_REPL_LEXER_HPP_
 
 #include <unordered_map>
 #include <optional>
@@ -7,97 +7,37 @@
 #include "hort/string.hpp"
 #include "hort/vector.hpp"
 
-namespace hort::jit {
+#include "hort/repl/token.hpp"
+
+namespace hort::repl {
 
 struct Lexer {
 
-  struct Token {
-
-    enum class Kind
-      { Symbol
-      , Builtin
-      , String
-      , Number
-      , Whitespace
-      , True
-      , False
-      };
-
-    const std::unordered_map<Kind, std::string_view> kinds{
-      { Kind::Symbol, "Symbol" },
-      { Kind::Builtin, "Builtin" },
-      { Kind::String, "String" },
-      { Kind::Number, "Number" },
-      { Kind::Whitespace, "Whitespace" },
-      { Kind::True, "True" },
-      { Kind::False, "False" },
-    };
-
-    struct Ln {
-      size_t line{0};
-      size_t column{0};
-
-      bool operator==(const Ln &other) const noexcept {
-        return line == other.line && column == other.column;
-      }
-    };
-
-    const Kind kind;
-    const std::string value;
-    const Ln ln;
-
-    explicit Token(Kind kind_, const std::string &value_, Ln ln_) noexcept
-      : kind{kind_}
-      , value{value_}
-      , ln{ln_} {}
-
-    const std::unordered_map<Kind, std::string_view> colorize{
-      { Kind::Symbol,     "{}"                  },
-      { Kind::Builtin,    "\033[1;31m{}\033[0m" },
-      { Kind::String,     "\033[1;32m{}\033[0m" },
-      { Kind::Number,     "\033[1;33m{}\033[0m" },
-      { Kind::Whitespace, "{}"                  },
-      { Kind::True,       "\033[1m{}\033[0m"    },
-      { Kind::False,      "\033[1m{}\033[0m"    },
-    };
-
-    std::string colorized() const {
-      return fmt::format(colorize.find(kind)->second, value);
-    }
-
-    std::string str() const noexcept {
-      return fmt::format("{} = '{}'", kinds.find(kind)->second, value);
-    }
-
-  };
-
-  std::vector<Token> tokens{};
+  using CharType = char;
 
   struct Error {
     std::string_view message;
-    Lexer::Token::Ln ln{0, 1};
+    Token::Ln ln{0, 1};
 
     explicit operator bool() const noexcept {
       return ln.column != 0;
     }
   };
 
-  std::vector<Error> errors;
-
   struct Cursor {
-    std::string source;
+    string source;
     decltype(source.cbegin()) iterator{source.cbegin()};
     Token::Ln position{0, 0};
 
-    char consume() noexcept {
+    CharType consume() noexcept {
       return *(iterator++);
     }
 
-    char peek() const noexcept {
+    CharType peek() const noexcept {
       return *(iterator + 1);
     }
 
-    char get() const noexcept {
+    CharType get() const noexcept {
       return *iterator;
     }
 
@@ -109,7 +49,7 @@ struct Lexer {
       return iterator != source.end();
     }
 
-    void operator++(int _) noexcept {
+    void operator++([[maybe_unused]] int _) noexcept {
       iterator++;
       switch (*iterator) {
         case '\n':
@@ -122,10 +62,13 @@ struct Lexer {
       }
     }
 
-    char operator*() const noexcept {
+    CharType operator*() const noexcept {
       return *iterator;
     }
   } cursor{};
+
+  vector<Error> errors;
+  vector<Token> tokens{};
 
   const std::unordered_map<std::string_view, Token::Kind> keywords{
     { "archive",    Token::Kind::Builtin },
@@ -146,7 +89,7 @@ struct Lexer {
     }
 
     auto start = cursor.position;
-    std::string str = "";
+    string str = "";
 
     auto val = cursor.get();
 
@@ -158,9 +101,7 @@ struct Lexer {
         str += val;
         cursor.step();
       }
-      auto token = Token{Token::Kind::Number, str, start};
-      tokens.push_back(token);
-      return token;
+      return new_token(Token::Kind::Number, str, start);
     }
 
     if (val == ' ') {
@@ -168,9 +109,7 @@ struct Lexer {
         str += val;
         cursor.step();
       }
-      auto token = Token{Token::Kind::Whitespace, str, start};
-      tokens.push_back(token);
-      return token;
+      return new_token(Token::Kind::Whitespace, str, start);
     }
 
     if (val == '\'') {
@@ -188,9 +127,7 @@ struct Lexer {
       } else {
         errors.emplace_back(Error{"unmatched '", start});
       }
-      auto token = Token{Token::Kind::String, str, start};
-      tokens.push_back(token);
-      return token;
+      return new_token(Token::Kind::String, str, start);
     }
 
     while (val != ' ' && cursor.has_next()) {
@@ -200,19 +137,22 @@ struct Lexer {
     };
 
     if (keywords.find(str) != keywords.end()) {
-      auto token = Token{keywords.find(str.c_str())->second, str, start};
-      tokens.push_back(token);
-      return token;
+      return new_token(keywords.find(str.c_str())->second, str, start);
     } else {
-      auto token = Token{Token::Kind::Symbol, str, start};
-      tokens.push_back(token);
-      return token;
+      return new_token(Token::Kind::Symbol, str, start);
     }
 
   };
 
-  std::string colorized() {
-    std::string str = "";
+  template <typename ... Args>
+  Token new_token(const Args& ... args) {
+    auto token = Token{args...};
+    tokens.push_back(token);
+    return token;
+  }
+
+  string colorized() {
+    string str = "";
     Error error;
     while (consume());
     for (int i = 0; const auto &tok : tokens) {
@@ -229,8 +169,8 @@ struct Lexer {
     return str;
   }
 
-  std::string str() {
-    std::string str = "";
+  string str() {
+    string str = "";
     for (const auto& tok : tokens) {
       str += tok.str() + "\n";
     }
@@ -239,6 +179,6 @@ struct Lexer {
 
 };
 
-} // hort::jit
+} // hort::repl
 
-#endif // HORT_JIT_LEXER_HPP_
+#endif // HORT_REPL_LEXER_HPP_

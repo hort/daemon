@@ -6,33 +6,33 @@
 namespace hort::filesystem {
 
 /// \brief Returns true if file exists.
-[[nodiscard]] inline bool exists(const std::string& path);
+[[nodiscard]] bool exists(const string& path);
 
 /// \brief Returns true if file exists.
 template <typename... Args>
 [[nodiscard]] inline bool exists(const Args&... args) {
-  return exists("/"_join(args...));
+  return exists(join("/", args...));
 }
 
 /// \brief Create directories to path.
-inline int mkpath(std::string path);
+bool mkpath(string path);
 
 /// \brief Create directories to path.
 template <typename... Args>
 inline bool mkpath(const Args&... args) {
-  return mkpath("/"_join(args...));
+  return mkpath(join("/", args...));
 }
 
 /// \brief Save bin to filepath/filename. If file already exists overwrites it.
-inline int write(const std::string& source,
-                 const std::string& filepath,
-                 const std::string& filename);
+bool write(const string& source,
+           const string& filepath,
+           const string& filename);
 
-/// \brief Sanitize filepath replacing all occurences of '/' with '-'.
-[[nodiscard]] inline std::string sanitize(const std::string& str);
+/// \brief Sanitize filepath by removing all '/'
+[[nodiscard]] string sanitize(const string& str);
 
 /// \brief Returns the base nome of the path.
-[[nodiscard]] inline std::string base_name(const std::string& path);
+[[nodiscard]] string base_name(const string& path);
 
 } // namespace hort::filesystem
 

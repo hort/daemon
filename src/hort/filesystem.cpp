@@ -1,5 +1,4 @@
 #include "hort/filesystem.hpp"
-#include "hort/regexp.hpp"
 
 #include <fstream>
 #include <sys/stat.h>
@@ -7,25 +6,27 @@
 
 namespace hort::filesystem {
 
-bool exists(const std::string& path) {
+bool exists(const string& path) {
   struct stat buffer;
   return (stat(path.data(), &buffer) == 0);
 }
 
-int mkpath(std::string path) {
-  if (exists(path)) return 0;
+bool mkpath(string path) {
+  if (exists(path))
+    return 0;
 
-  std::string::size_type pos = 0;
-  std::string dir;
+  string::size_type pos = 0;
+  string dir;
   int mdret;
 
   if (path[path.size() - 1] != '/') {
     path += '/';
   }
 
-  while ((pos = path.find_first_of('/', pos)) != std::string::npos) {
+  while ((pos = path.find_first_of('/', pos)) != string::npos) {
     dir = path.substr(0, pos++);
-    if (dir.size() == 0) continue;
+    if (dir.size() == 0)
+      continue;
     if ((mdret = mkdir(dir.c_str(), 0775)) && errno != EEXIST) {
       return mdret;
     }
@@ -34,9 +35,9 @@ int mkpath(std::string path) {
   return mdret;
 }
 
-int write(const std::string& source,
-          const std::string& filepath,
-          const std::string& filename) {
+bool write(const string& source,
+           const string& filepath,
+           const string& filename) {
   mkpath(filepath);
   std::ofstream file;
   file.open(filepath + "/" + filename);
@@ -47,14 +48,14 @@ int write(const std::string& source,
   return 0;
 }
 
-void sanitize(std::string& str) {
-  hort::regexp::replaceall("/", "-", str);
+string sanitize(const string &str) {
+  return str.replace("/", "");
 }
 
-std::string base_name(const std::string &path) {
+string base_name(const string& path) {
   auto pos = path.find_last_of("/");
-  if (pos != std::string::npos) {
-    return path.substr(pos, path.length());
+  if (pos != string::npos) {
+    return path.substr(pos + 1, path.length());
   } else {
     return path;
   }

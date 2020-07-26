@@ -1,15 +1,14 @@
-#ifndef HORT_PRINT_HPP_
-#define HORT_PRINT_HPP_
+#ifndef __HORT_PRINT_HPP_
+#define __HORT_PRINT_HPP_
 
-#include <fmt/format.h>
 #include <iostream>
+#include <fmt/format.h>
 #include <map>
-#include <string>
-#include <type_traits>
-#include <vector>
 
 #include "hort/vector.hpp"
 #include "hort/string.hpp"
+
+#include "hort/term/io.hpp"
 
 #include "json.hpp"
 using json = nlohmann::json;
@@ -30,37 +29,38 @@ inline void print(json j) {
 template <typename T, typename... Args>
 inline void print(const T& i, const Args&... args) {
   detail::print(i);
-  fmt::print(" ");
+  putchar(' ');
   detail::print(args...);
 }
 
 template <typename T, typename U>
 inline void print(const std::map<T, U>& m) {
   auto it = m.begin();
-  fmt::print("{");
+  putchar('{');
   while (it != m.end()) {
     detail::print(it->first);
-    fmt::print(": ");
+    puts(": ");
     detail::print(it->second);
     if (++it != m.end()) {
-      fmt::print(", ");
+      puts(", ");
     }
   }
-  fmt::print("}");
+  putchar('}');
 }
 
-inline void print(const vector<string>& v) {
+template <typename T>
+inline void print(const vector<T>& v) {
   if (!v.size()) {
-    fmt::print("[");
+    fmt::print("[]");
     return;
   }
   fmt::print("[");
   for (unsigned i = 0; i < v.size() - 1; i++) {
     detail::print(v[i]);
-    fmt::print(", ");
+    puts(", ");
   }
   detail::print(v[v.size() - 1]);
-  fmt::print("]");
+  putchar(']');
 }
 
 } // namespace detail
@@ -68,9 +68,26 @@ inline void print(const vector<string>& v) {
 template <typename... Args>
 inline void print(const Args&... args) {
   detail::print(args...);
-  fmt::print("\n");
+}
+
+template <typename... Args>
+inline void println(const Args&... args) {
+  detail::print(args...);
+  putchar('\n');
+}
+
+template <typename... Args>
+inline void printf(std::string_view fmt, const Args&... args) {
+  fmt::format_args argspack = fmt::make_format_args(args...);
+  print(fmt::vformat(fmt, argspack));
+}
+
+template <typename... Args>
+inline string sprintf(std::string_view fmt, const Args&... args) {
+  fmt::format_args argspack = fmt::make_format_args(args...);
+  return fmt::vformat(fmt, argspack);
 }
 
 } // namespace hort
 
-#endif // HORT_PRINT_HPP_
+#endif // __HORT_PRINT_HPP_

@@ -1,31 +1,26 @@
-#ifndef HORT_JIT_PARSER_HPP_
-#define HORT_JIT_PARSER_HPP_
+#ifndef HORT_REPL_PARSER_HPP_
+#define HORT_REPL_PARSER_HPP_
 
-#include <unordered_map>
-#include <optional>
+#include "hort/repl/lexer.hpp"
 
-#include "hort/string.hpp"
-#include "hort/vector.hpp"
-
-#include "hort/jit/lexer.hpp"
-
-namespace hort::jit {
+namespace hort::repl {
 
 struct Parser {
 
+  /*
   struct Cursor {
-    std::vector<Lexer::Token> source;
+    std::vector<Token> source;
     decltype(source.cbegin()) iterator{source.cbegin()};
 
-    Lexer::Token consume() noexcept {
+    Token consume() noexcept {
       return *(iterator++);
     }
 
-    Lexer::Token peek() const noexcept {
+    Token peek() const noexcept {
       return *(iterator + 1);
     }
 
-    Lexer::Token get() const noexcept {
+    Token get() const noexcept {
       return *iterator;
     }
 
@@ -41,17 +36,20 @@ struct Parser {
       iterator++;
     }
 
-    Lexer::Token operator*() const noexcept {
+    Token operator*() const noexcept {
       return *iterator;
     }
   } cursor{};
 
-  explicit Parser(std::vector<Lexer::Token> &source_) noexcept
+  explicit Parser(vector<Token> &source_) noexcept
     : cursor{source_} {}
+  */
+
+  explicit Parser() noexcept {}
+
 
 };
 
-} // hort::jit
+} // hort::repl
 
-
-#endif // HORT_JIT_PARSER_HPP_
+#endif // HORT_REPL_PARSER_HPP_

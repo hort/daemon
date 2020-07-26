@@ -9,33 +9,34 @@ namespace hort {
 template <typename T>
 class vector : public std::vector<T> {
 public:
-  using size_type = int;
+  using size_type  = int;
+  using value_type = T;
 
-  explicit operator bool() const { return std::vector<T>::size(); }
+  using std::vector<T>::vector;
 
-  /// \brief Access element at position `pos`. If number is negative wrap to end
-  /// of vector.
-  const T& operator[](size_type pos) const {
+  explicit operator bool() const { return std::vector<T>::size() > 0; }
+
+  /// \brief Access element at position `pos`. Negative index wraps to end.
+  [[nodiscard]] const T& at(size_type pos) const noexcept {
     if (pos < 0) {
-      return std::vector<T>::operator[](std::vector<T>::size() + pos - 1);
+      return std::vector<T>::at(std::vector<T>::size() + pos);
     } else {
-      return std::vector<T>::operator[](pos);
+      return std::vector<T>::at(pos);
     }
   }
 
-  /// \brief Access element at position `pos`. If number is negative wrap to end
-  /// of vector.
-  T operator[](size_type pos) {
+  /// \brief Access element at position `pos`. Negative index wraps to end.
+  [[nodiscard]] T &at(size_type pos) noexcept {
     if (pos < 0) {
-      return std::vector<T>::operator[](std::vector<T>::size() + pos - 1);
+      return std::vector<T>::at(std::vector<T>::size() + pos);
     } else {
-      return std::vector<T>::operator[](pos);
+      return std::vector<T>::at(pos);
     }
   }
 
   /// \brief Return position of first instance of `val`.
-  size_type index(const T& val) {
-    int pos = 0;
+  [[nodiscard]] size_type index(const T& val) const noexcept {
+    size_type pos = 0;
     for (const auto& i : *this) {
       if (i == val) {
         return pos;
@@ -46,7 +47,8 @@ public:
   }
 
   /// \brief Return position of first instance of `val`.
-  size_type index(const std::function<bool(const T&)>& compare) {
+  template <typename Func>
+  [[nodiscard]] size_type index(const Func& compare) const noexcept {
     size_type pos = 0;
     for (const auto& i : *this) {
       if (compare(i)) {
@@ -56,6 +58,21 @@ public:
     }
     return -1;
   }
+
+  template <typename Func>
+  const vector& map(const Func& lambda) const {
+    for (const auto& i : *this) {
+      lambda(i);
+    }
+  }
+
+  template <typename Func>
+  vector& map(const Func& lambda) {
+    for (auto& i : *this) {
+      lambda(i);
+    }
+  }
+
 };
 
 } // namespace hort

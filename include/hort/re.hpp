@@ -1,12 +1,14 @@
-#ifndef HORT_REGEXP_HPP_
-#define HORT_REGEXP_HPP_
+#ifndef HORT_RE_HPP_
+#define HORT_RE_HPP_
 
 #include <re2/re2.h>
 
 #include "hort/vector.hpp"
 #include "hort/string.hpp"
 
-namespace hort::regexp {
+namespace hort {
+
+namespace re {
 
 namespace detail {
 
@@ -29,18 +31,17 @@ inline void find(const re2::RE2& re, const std::string& target, Args&... args) {
 
 /// \brief Find all occurence of `pattern` in `target`.
 [[nodiscard]] inline vector<string> findall(const std::string& pattern,
-                                   const std::string& target) {
-  re2::RE2 re(pattern);
-  return detail::find(re, target);
-}
-
-/// \brief Find first occurence of `pattern` in `target`.
-[[nodiscard]] inline vector<string> find(const std::string& pattern,
-                                const std::string& target) {
+                                            const std::string& target) {
   re2::RE2 re(pattern);
   return detail::findall(re, target);
 }
 
+/// \brief Find first occurence of `pattern` in `target`.
+[[nodiscard]] inline vector<string> find(const std::string& pattern,
+                                         const std::string& target) {
+  re2::RE2 re(pattern);
+  return detail::find(re, target);
+}
 /// \brief Check if `pattern` matches `target`.
 [[nodiscard]] inline bool match(const std::string& pattern,
                                 const std::string& target) {
@@ -59,20 +60,25 @@ inline void find(const std::string& pattern,
 }
 
 /// \brief Replace first occurence of `re` in `str` with `rewrite`.
-void replace(const std::string& pattern,
-             const std::string& rewrite,
-             std::string& str);
+inline void replace(const std::string& pattern,
+                    const std::string& rewrite,
+                    std::string& str) {
+  re2::RE2::Replace(&str, pattern, rewrite);
+}
 
 /// \brief Replace all occurences of `re` in `str` with `rewrite`.
-void replaceall(const std::string& pattern,
-                const std::string& rewrite,
-                std::string& str);
+inline void replaceall(const std::string& pattern,
+                       const std::string& rewrite,
+                       std::string& str) {
+  re2::RE2::GlobalReplace(&str, pattern, rewrite);
+}
 
 class regex {
 
   re2::RE2 r;
-
+public:
   const std::string pattern;
+private:
 
   static const re2::RE2::Options& build_options() {
     static re2::RE2::Options options{};
@@ -116,6 +122,8 @@ public:
   }
 };
 
-} // namespace hort::regexp
+} // namespace re
+ 
+} // namespace hort
 
-#endif /* HORT_REGEXP_HPP_ */
+#endif /* HORT_RE_HPP_ */

@@ -1,6 +1,6 @@
-#include "hort/regexp.hpp"
+#include "hort/re.hpp"
 
-namespace hort::regexp::detail {
+namespace hort::re::detail {
 
 vector<string> findall(const re2::RE2& re, const std::string& target) {
   vector<string> match;
@@ -17,14 +17,14 @@ vector<string> findall(const re2::RE2& re, const std::string& target) {
   re2::StringPiece input{target};
   while (re2::RE2::FindAndConsumeN(&input, re, &(args[0]), ngroups)) {
     for (const auto& w : ws) {
-      match.emplace_back(w);
+      match.emplace_back(std::string(w));
     }
   }
 
   return match;
 }
 
-vector<string> search(const re2::RE2& re, const std::string& target) {
+vector<string> find(const re2::RE2& re, const std::string& target) {
   vector<string> match;
 
   auto ngroups = re.NumberOfCapturingGroups();
@@ -39,7 +39,7 @@ vector<string> search(const re2::RE2& re, const std::string& target) {
   re2::StringPiece input{target};
   re2::RE2::PartialMatchN(input, re, &(args[0]), ngroups);
   for (const auto& w : ws) {
-    match.emplace_back(w);
+    match.emplace_back(std::string(w));
   }
 
   return match;

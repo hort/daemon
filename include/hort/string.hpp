@@ -14,8 +14,7 @@ class string : public std::string {
   static constexpr const char* ws = " \t\n\r\f\v";
 
 public:
-  string() : std::string{""} {}
-  string(const char* str) : std::string{str} {}
+  using std::string::string;
   string(const std::string& str) : std::string{str} {}
 
   using std::string::replace;
@@ -24,8 +23,15 @@ public:
   [[nodiscard]] vector<string> split(const string& delims = " ") const;
 
   /// \brief Replace every occurence of `from` with `to`.
-  /// \see hort::regexp::replace if you need regexp support.
+  /// \see rreplace if you need re support.
   [[nodiscard]] string replace(const string& from, const string& to) const;
+
+  /// \brief Regex replace every occurence of `from` with `to`.
+  //[[nodiscard]] string rreplace(const string& from, const string& to) const {
+  //  auto s = *this;
+  //  re::replaceall(from, to, s);
+  //  return s;
+  //};
 
   template <typename... Args>
   [[nodiscard]] string format(const Args&... args) const {
@@ -75,57 +81,21 @@ public:
   }
 };
 
-struct joiner {
-  std::string_view separator;
+template <typename... Args>
+inline string join(std::string_view separator, const Args&... args) {
+  return join(separator, args...);
+}
 
-  constexpr explicit joiner(std::string_view separator_)
-    : separator{separator_} {}
+template <typename T, typename... Args>
+inline string join(std::string_view separator, const T& t, const Args&... args) {
+  return t + std::string(separator) + join(separator, args...);
+}
 
-  template <typename... Args>
-  string operator()(const Args&... args) {
-    return impl(args...);
-  }
-
-  template <typename T, typename... Args>
-  string impl(const T& t, const Args&... args) {
-    return t + std::string(separator) + impl(args...);
-  }
-
-  template <typename T>
-  string impl(const T& t) {
-    return t;
-  }
-};
-
-template <typename ... Args>
-constexpr auto concat(Args ... args) {
-    constexpr auto size = [] (std::string_view str) {
-        return str.size() - 1;
-    };
-
-    char buffer[(size(args) + ...)];
-    int index = 0;
-
-    (([&index, &buffer](std::string_view str) {
-        for (const auto & i : str) {
-            buffer[index++] = i;
-        }
-    })(args), ...);
-
-    return std::string_view{buffer};
+template <typename T>
+inline string join(std::string_view, const T& t) {
+  return t;
 }
 
 } // namespace hort
-
-[[nodiscard]] constexpr auto operator"" _format(const char* format, std::size_t) {
-  return [format](const auto&... args) {
-    fmt::format_args argspack = fmt::make_format_args(args...);
-    return fmt::vformat(format, argspack);
-  };
-}
-
-[[nodiscard]] constexpr auto operator"" _join(const char* separator, std::size_t) {
-  return hort::joiner{separator};
-}
 
 #endif // HORT_STRING_HPP_
