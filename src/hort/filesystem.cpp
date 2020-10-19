@@ -1,50 +1,51 @@
 #include "hort/filesystem.hpp"
 
-#include <fstream>
 #include <sys/stat.h>
+#include <cstdio>
+#include <fstream>
 #include <unistd.h>
 
 namespace hort::filesystem {
 
 bool exists(const string& path) {
   struct stat buffer;
-  return (stat(path.data(), &buffer) == 0);
+  return stat(path.data(), &buffer) == 0;
 }
 
 bool mkpath(string path) {
-  if (exists(path))
+  if (exists(path)) {
     return 0;
-
-  string::size_type pos = 0;
-  string dir;
-  int mdret;
+  }
 
   if (path[path.size() - 1] != '/') {
     path += '/';
   }
 
+  string::size_type pos = 0;
   while ((pos = path.find_first_of('/', pos)) != string::npos) {
-    dir = path.substr(0, pos++);
-    if (dir.size() == 0)
+    string dir = path.substr(0, pos++);
+    if (dir.size() == 0) {
       continue;
-    if ((mdret = mkdir(dir.c_str(), 0775)) && errno != EEXIST) {
+    }
+    if (auto mdret = mkdir(dir.c_str(), 0775); mdret && errno != EEXIST) {
       return mdret;
     }
   }
 
-  return mdret;
+  return 0;
 }
 
 bool write(const string& source,
            const string& filepath,
            const string& filename) {
   mkpath(filepath);
-  std::ofstream file;
-  file.open(filepath + "/" + filename);
-  if (file.fail())
+  std::ofstream f{};
+  f.open(filepath + "/" + filename);
+  if (f.fail()) {
     return 1;
-  file << source;
-  file.close();
+  }
+  f << source;
+  f.close();
   return 0;
 }
 

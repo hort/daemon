@@ -1,83 +1,129 @@
-#ifndef SESSION_HPP_
-#define SESSION_HPP_
+#ifndef HORT_HTTP_SESSION_HPP_
+#define HORT_HTTP_SESSION_HPP_
 
 #include "hort/http/cookiejar.hpp"
 #include "hort/http/response.hpp"
 
+#include "hort/filesystem.hpp"
+#include "hort/print.hpp"
+
 #include <fmt/format.h>
 
-namespace hort::http
-{
+namespace hort::http {
 
-class Session
-{
-	friend class Form;
+class Session {
+  enum class Method { GET, POST };
 
-	enum class Method { GET, POST };
+  CURL* handle;
+  int max_retries;
+  int retry_delay;
 
-	CURL *handle;
-	int max_retries;
-	int retry_delay;
+  /// \brief CURL callback writer.
+  static size_t writer(char* ptr, size_t size, size_t nmemb, std::string* data) {
+    if (data == nullptr) {
+      return 0;
+    }
+    data->append(ptr, size * nmemb);
+    return size * nmemb;
+  }
 
-	/// \brief CURL callback writer.
-	static size_t writer(char *ptr, size_t size, size_t nmemb, std::string *data);
+  /// \brief Parse incoming headers and save them inside `response`.
+  void parse_headers(Response& response, const std::string& unparsed_headers);
 
-	/// \brief Parse incoming headers and save them inside response.
-	void parse_headers(Response &response, const std::string &unparsed_headers);
-
-	/// \brief Perform an HTTP request.
-	Response request(const std::string &url, const std::string &payload, Method method);
+  /// \brief Perform an HTTP request.
+  Response request(const std::string& url,
+                   const std::string& payload,
+                   Method method);
 
 public:
-	Session(const std::string &cookie_filepath="./cookies");
-	~Session();
+  explicit Session(const std::string& cookie_filepath = "./cookies");
 
-	/// \brief Send a GET request to url.
-	Response get(const std::string &url);
+  ~Session() {
+    curl_easy_cleanup(handle);
+    cookies.save();
+  }
 
-	/// \brief Send a GET request to url with formatted params.
-	Response get(const std::string url, const std::map<std::string, std::string> &params);
+  /// \brief Send a GET request to `url`.
+  Response get(const std::string& url) {
+    return request(url, "", Method::GET);
+  }
 
-	/// \brief Send a GET request to url with formatted params.
-	template <typename... Args>
-	Response get(std::string_view format, const Args&... args, const std::map<std::string, std::string> &params)
-	{
-		auto url = fmt::vformat(format, fmt::make_format_args(args...));
-		return get(url, "", params);
-	}
+  /// \brief Send a GET request to `url` with formatted `params`.
+  Response get(const std::string url,
+               const std::map<std::string, std::string>& params);
 
-	/// \brief Send a GET request to url.
-	template <typename... Args>
-	Response get(fmt::string_view format, const Args&... args)
-	{
-		std::string url = fmt::vformat(format, fmt::make_format_args(args...));
-		return request(url, "", Method::GET);
-	}
+  /// \brief Send a GET request to `url` with formatted `params`.
+  template <typename... Args>
+  Response get(const std::string& format,
+               const Args&... args,
+               const std::map<std::string, std::string>& params) {
+    fmt::format_args argspack = fmt::make_format_args(args...);
+    auto url = fmt::vformat(format, argspack);
+    return get(url, "", params);
+  }
 
-	/// \brief Send a POST request to url with payload.
-	Response post(const std::string &url, const std::string &payload);
+  /// \brief Send a GET request to `url`.
+  template <typename... Args>
+  Response get(const std::string& format, const Args&... args) {
+    fmt::format_args argspack = fmt::make_format_args(args...);
+    auto url = fmt::vformat(format, argspack);
+    return request(url, "", Method::GET);
+  }
 
-	/// \brief Send a POST request to url with payload.
-	Response post(const std::string url, const std::map<std::string, std::string> &payload);
+  /// \brief Send a POST request to `url` with `payload`.
+  Response post(const std::string& url, const std::string& payload) {
+    return request(url, payload, Method::POST);
+  }
 
-	/// \brief Download url and save response to fill.
-	int download(const std::string &filepath, const std::string &filename, const std::string &url);
+  /// \brief Send a POST request to `url` with `payload`.
+  Response post(const std::string url,
+                const std::map<std::string, std::string>& payload);
 
-	/// \brief Download url and save response to fill.
-	template <typename... Args>
-	int download(const std::string &filepath, const std::string &filename, std::string_view format, const Args&... args)
-	{
-		auto url = fmt::vformat(format, fmt::make_format_args(args...));
-		return download(filepath, filename, url);
-	}
+  /// \brief Download resource at `url` and save response to file.
+  /// \brief Returns written bytes to memory, -1 if none.
+  int download(const std::string& filepath,
+               const std::string& filename,
+               const std::string& url) {
+    auto response = get(url);
+    if (response.code != 200) return -1;
+    filesystem::write(response.body, filepath, filename);
+    return !response.body.size();
+  }
 
-	/// \brief Default headers for all request.
-	std::map<std::string, std::string> headers;
+  /// \brief Download resource at `url` and save response to file.
+  template <typename... Args>
+  int download(const std::string& filepath,
+               const std::string& filename,
+               const std::string& format,
+               const Args&... args) {
+    fmt::format_args argspack = fmt::make_format_args(args...);
+    auto url = fmt::vformat(format, argspack);
+    return download(filepath, filename, url);
+  }
 
-	/// \brief Cookies for the current session.
-	CookieJar cookies;
+  /// \brief Default headers for all request.
+  std::map<std::string, std::string> headers;
+
+  /// \brief Cookies for the current session.
+  CookieJar cookies;
 };
+
+inline Response get(const std::string& url) {
+  Session session;
+  return session.get(url);
+}
+
+template <typename ... Args>
+int download(const std::string& filepath,
+             const std::string& filename,
+             const std::string& format,
+             const Args&... args) {
+  Session session;
+  fmt::format_args argspack = fmt::make_format_args(args...);
+  auto url = fmt::vformat(format, argspack);
+  return session.download(filepath, filename, url);
+}
 
 } // namespace hort::http
 
-#endif /* SESSION_HPP_ */
+#endif /* HORT_HTTP_SESSION_HPP_ */

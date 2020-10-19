@@ -1,40 +1,33 @@
-#ifndef RESPONSE_HPP_
-#define RESPONSE_HPP_
+#ifndef HORT_HTTP_RESPONSE_HPP_
+#define HORT_HTTP_RESPONSE_HPP_
 
 #include "hort/formats.hpp"
 #include "hort/re.hpp"
 
 namespace hort::http {
 
-struct Response
-{
+struct Response {
 
-	std::string body;
-	std::string url;
-	std::map<std::string, std::string> headers;
-	long code;
+  std::string body;
+  std::string url;
+  std::map<std::string, std::string> headers;
+  long code;
 
-	json parse()
-	{
-		try {
-			return json::parse(body);
-		} catch(const json::basic_json::parse_error &e) {
-			return nullptr;
-		}
-	};
+  /// \brief Parse response body as JSON
+  [[nodiscard]] json parse() {
+    try {
+      return json::parse(body);
+    } catch (const json::basic_json::parse_error& e) { return nullptr; }
+  };
 
-	json feedparse()
-	{
-		return hort::formats::xml2json(body.c_str());
-	}
+  /// \brief Parse response body as XML
+  [[nodiscard]] json feedparse() { return formats::xml2json(body); }
 
-	json findall(const std::string &pattern)
-	{
-		return hort::re::findall(pattern, body);
-	}
-
+  [[nodiscard]] vector<string> findall(const std::string& pattern) {
+    return re::findall(pattern, body);
+  }
 };
 
 } // namespace hort::http
 
-#endif /* RESPONSE_HPP_ */
+#endif /* HORT_HTTP_RESPONSE_HPP_ */

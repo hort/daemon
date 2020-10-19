@@ -2,15 +2,21 @@
 
 #include "hort/string.hpp"
 
-TEST(String, Joiner) {
-  EXPECT_EQ("/"_join("foo", "bar"), "foo/bar");
-}
+TEST(String, Trim) {
+  struct pair {
+    std::string_view first;
+    std::string_view second;
+    std::string_view third;
+    std::string_view fourth;
+  };
 
-TEST(String, Formatter) {
-  EXPECT_EQ("{} {}"_format("foo", "bar"), "foo bar");
-}
+  std::array tests = {
+    pair{" foo   ", "foo", "foo   ", " foo"},
+  };
 
-int main(int argc, char* argv[]) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  for (const auto &[s, t, l, r] : tests) {
+    ASSERT_EQ(hort::string(s).trim(),  t);
+    ASSERT_EQ(hort::string(s).ltrim(), l);
+    ASSERT_EQ(hort::string(s).rtrim(), r);
+  }
 }

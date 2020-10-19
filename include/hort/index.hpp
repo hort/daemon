@@ -19,7 +19,7 @@ using bsoncxx::builder::stream::open_document;
 
 namespace hort {
 
-/// TODO: add check for connection status
+/// TODO: check for connection status
 class Index {
 
   static mongocxx::database& create_database() {
@@ -91,6 +91,7 @@ public:
           document{} << "$set" << open_document << update_key << update_value
                      << close_document << finalize);
     } catch (const mongocxx::exception& e) { return e.code().value(); }
+    return 0;
   }
 };
 

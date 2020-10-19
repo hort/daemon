@@ -1,5 +1,5 @@
-#ifndef HORT_FILESYSTEM_HPP_
-#define HORT_FILESYSTEM_HPP_
+#ifndef __HORT_FILESYSTEM_HPP_
+#define __HORT_FILESYSTEM_HPP_
 
 #include "hort/string.hpp"
 
@@ -36,4 +36,4 @@ bool write(const string& source,
 
 } // namespace hort::filesystem
 
-#endif /* HORT_FILESYSTEM_HPP_ */
+#endif /* __HORT_FILESYSTEM_HPP_ */
